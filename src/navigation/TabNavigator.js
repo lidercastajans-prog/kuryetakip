@@ -19,9 +19,17 @@ function MainTabs() {
   const isWeb = Platform.OS === 'web';
   const isIOS = Platform.OS === 'ios';
 
+  // Detect if running on mobile browser
+  const isMobileWeb = isWeb && (
+    typeof navigator !== 'undefined' && 
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  );
+
   // Dynamic bottom inset to prevent cutoff on notch devices and mobile browsers
-  const bottomInset = insets.bottom > 0 ? insets.bottom : (isIOS ? 28 : (isWeb ? 16 : 8));
-  const tabBarHeight = 56 + bottomInset;
+  const bottomInset = insets.bottom > 0 
+    ? insets.bottom 
+    : (isIOS ? 28 : (isMobileWeb ? 24 : (isWeb ? 12 : 8)));
+  const tabBarHeight = 58 + bottomInset;
 
   return (
     <Tab.Navigator
@@ -33,7 +41,7 @@ function MainTabs() {
           fontSize: 11,
           fontWeight: '600',
           marginTop: -2,
-          marginBottom: isIOS ? 0 : 4,
+          marginBottom: isIOS || isMobileWeb ? 2 : 4,
         },
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
