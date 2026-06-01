@@ -1,0 +1,10 @@
+node_modules/
+android/
+ios/
+.expo/
+xcodebuild_premium.log
+*.log
+.DS_Store
+ios/build/
+android/app/build/
+android/.gradle/

@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "KuryeApp",
+    "slug": "KuryeApp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "kuryeapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yavuzhankilic.kuryeapp2025",
+      "appleTeamId": "PHF64H9BY6"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#EA580C",
+        "foregroundImage": "./assets/images/icon.png"
+      },
+      "package": "com.yavuzhankilic.KuryeApp"
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-web-browser"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0866e2dc-085f-4682-8a8e-bf5f92bf56a5"
+      }
+    }
+  }
+}
