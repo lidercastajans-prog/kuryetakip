@@ -8,6 +8,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "build": "npx expo export",
     "lint": "expo lint"
   },
   "dependencies": {
@@ -30,7 +31,10 @@
     "expo-web-browser": "~15.0.10",
     "lucide-react-native": "^1.7.0",
     "react": "19.1.0",
+    "react-dom": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-web": "~0.19.13",
+    "@expo/metro-runtime": "~4.0.0",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
