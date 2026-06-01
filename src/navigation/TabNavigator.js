@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Package, Users, Crown } from 'lucide-react-native';
 
 import DashboardScreen from '../screens/DashboardScreen';
@@ -14,6 +15,14 @@ import { useAuthStore } from '../store/useAuthStore';
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
+  const insets = useSafeAreaInsets();
+  const isWeb = Platform.OS === 'web';
+  const isIOS = Platform.OS === 'ios';
+
+  // Dynamic bottom inset to prevent cutoff on notch devices and mobile browsers
+  const bottomInset = insets.bottom > 0 ? insets.bottom : (isIOS ? 28 : (isWeb ? 16 : 8));
+  const tabBarHeight = 56 + bottomInset;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -24,14 +33,14 @@ function MainTabs() {
           fontSize: 11,
           fontWeight: '600',
           marginTop: -2,
-          marginBottom: Platform.OS === 'ios' ? 0 : 6,
+          marginBottom: isIOS ? 0 : 4,
         },
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 0,
-          height: Platform.OS === 'ios' ? 88 : 64,
+          height: tabBarHeight,
           paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          paddingBottom: bottomInset,
           ...Platform.select({
             ios: {
               shadowColor: '#000',
@@ -42,6 +51,9 @@ function MainTabs() {
             android: {
               elevation: 8,
             },
+            web: {
+              boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.06)',
+            }
           }),
         },
         tabBarIcon: ({ color, focused }) => {
