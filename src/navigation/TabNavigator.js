@@ -28,8 +28,8 @@ function MainTabs() {
   // Dynamic bottom inset to prevent cutoff on notch devices and mobile browsers
   const bottomInset = insets.bottom > 0 
     ? insets.bottom 
-    : (isIOS ? 28 : (isMobileWeb ? 24 : (isWeb ? 12 : 8)));
-  const tabBarHeight = 58 + bottomInset;
+    : (isIOS ? 28 : (isMobileWeb ? 12 : (isWeb ? 8 : 8)));
+  const tabBarHeight = 56 + bottomInset;
 
   return (
     <Tab.Navigator
