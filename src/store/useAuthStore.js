@@ -70,7 +70,18 @@ export const useAuthStore = create((set, get) => ({
     try {
       set({ isLoading: true });
 
-      // Use the app's custom scheme as redirect
+      if (Platform.OS === 'web') {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin,
+          },
+        });
+        if (error) throw error;
+        return;
+      }
+
+      // Use the app's custom scheme as redirect (Native only)
       const redirectUrl = Linking.createURL('auth/callback');
 
       console.log('Redirect URL:', redirectUrl);
