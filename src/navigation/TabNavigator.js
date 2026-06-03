@@ -40,13 +40,11 @@ function MainTabs() {
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
-          marginBottom: isIOS || isMobileWeb ? 4 : 6,
         },
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 0,
-          height: tabBarHeight,
-          paddingTop: 12,
+          minHeight: 60 + bottomInset,
           paddingBottom: bottomInset,
           ...Platform.select({
             ios: {
@@ -119,7 +117,8 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 32,
+    paddingTop: 4,
+    minHeight: 36,
   },
   iconContainerActive: {},
   activeDot: {
