@@ -155,42 +155,47 @@ export default function OrdersScreen() {
 
     const dueDateVal = orderDueDate ? orderDueDate.toISOString() : null;
 
-    if (editingOrderId) {
-      editOrder(editingOrderId, {
-        customerId: customer.id,
-        customerName: customer.name,
-        pickupLocation: pickupLocation.label,
-        deliveryLocation: deliveryLocation.label,
-        vehicleType,
-        amount: Number(amount),
-        courierName,
-        courierPlate,
-        courierPhone,
-        note,
-        due_date: dueDateVal,
-      });
-      Alert.alert('Başarılı ✓', 'Sipariş güncellendi.');
-    } else {
-      await addOrder({
-        customerId: customer.id,
-        customerName: customer.name,
-        pickupLocation: pickupLocation.label,
-        deliveryLocation: deliveryLocation.label,
-        vehicleType,
-        amount: Number(amount),
-        courierName,
-        courierPlate,
-        courierPhone,
-        note,
-        due_date: dueDateVal,
-      });
-      Alert.alert('Başarılı ✓', 'Sipariş oluşturuldu ve müşteriye borç yazıldı.');
-    }
+    try {
+      if (editingOrderId) {
+        await editOrder(editingOrderId, {
+          customerId: customer.id,
+          customerName: customer.name,
+          pickupLocation: pickupLocation.label,
+          deliveryLocation: deliveryLocation.label,
+          vehicleType,
+          amount: Number(amount),
+          courierName,
+          courierPlate,
+          courierPhone,
+          note,
+          due_date: dueDateVal,
+        });
+        Alert.alert('Başarılı ✓', 'Sipariş güncellendi.');
+      } else {
+        await addOrder({
+          customerId: customer.id,
+          customerName: customer.name,
+          pickupLocation: pickupLocation.label,
+          deliveryLocation: deliveryLocation.label,
+          vehicleType,
+          amount: Number(amount),
+          courierName,
+          courierPlate,
+          courierPhone,
+          note,
+          due_date: dueDateVal,
+        });
+        Alert.alert('Başarılı ✓', 'Sipariş oluşturuldu ve müşteriye borç yazıldı.');
+      }
 
-    setEditingOrderId(null);
-    setSelectedCustomerId(''); setPickupLocation(null); setDeliveryLocation(null); setAmount('');
-    setCourierName(''); setCourierPlate(''); setCourierPhone(''); setNote(''); setOrderDueDate(null); setShowOrderDueCal(false);
-    setActiveTab('active');
+      setEditingOrderId(null);
+      setSelectedCustomerId(''); setPickupLocation(null); setDeliveryLocation(null); setAmount('');
+      setCourierName(''); setCourierPlate(''); setCourierPhone(''); setNote(''); setOrderDueDate(null); setShowOrderDueCal(false);
+      setActiveTab('active');
+    } catch (error) {
+      // error is handled and alerted in useStore, so we just catch it to prevent success alert
+      console.log('handleAddOrder catch:', error);
+    }
   };
 
   const handleEditClick = (order) => {

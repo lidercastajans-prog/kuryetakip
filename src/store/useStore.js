@@ -160,9 +160,11 @@ export const useStore = create((set, get) => ({
           c.id === orderData.customerId ? { ...c, balance: newBalance } : c
         ),
       }));
+      return true;
     } catch (error) {
-       console.error(error);
-       Alert.alert('Sipariş Hatası', 'Sipariş buluta iletilemedi.');
+       console.error('addOrder error:', error);
+       Alert.alert('Sipariş Hatası', 'Sipariş buluta iletilemedi: ' + (error.message || ''));
+       throw error;
     }
   },
 
@@ -261,11 +263,11 @@ export const useStore = create((set, get) => ({
           ),
         }));
       }
-
-      Alert.alert('Başarılı', 'Sipariş güncellendi.');
+      return true;
     } catch (error) {
-      console.error(error);
-      Alert.alert('Güncelleme Hatası', 'Sipariş düzenlenemedi.');
+      console.error('editOrder error:', error);
+      Alert.alert('Güncelleme Hatası', 'Sipariş düzenlenemedi: ' + (error.message || ''));
+      throw error;
     }
   },
 
