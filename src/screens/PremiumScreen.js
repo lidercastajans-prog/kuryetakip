@@ -714,7 +714,7 @@ export default function PremiumScreen() {
 
 const s = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F8F9FB' },
-  container: { paddingBottom: 30 },
+  container: { paddingBottom: 110 },
 
   headerGradient: { backgroundColor: '#111827', paddingHorizontal: 24, paddingBottom: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, marginBottom: 0 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },

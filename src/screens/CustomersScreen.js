@@ -436,7 +436,7 @@ export default function CustomersScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F8F9FB' },
-  container: { paddingBottom: 40 },
+  container: { paddingBottom: 110 },
 
   // Header
   headerSection: {
