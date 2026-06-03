@@ -38,14 +38,14 @@ function MainTabs() {
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
-          marginBottom: isWeb ? 6 : 4,
+          marginBottom: 4,
         },
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 0,
-          height: tabBarHeight,
-          paddingTop: 12,
-          paddingBottom: isWeb ? 12 : bottomInset,
+          minHeight: 60,
+          paddingBottom: Platform.OS === 'web' ? 8 : (insets.bottom > 0 ? insets.bottom : 8),
+          paddingTop: 8,
           ...Platform.select({
             ios: {
               shadowColor: '#000',
@@ -58,6 +58,7 @@ function MainTabs() {
             },
             web: {
               boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.06)',
+              overflow: 'visible',
             }
           }),
         },
