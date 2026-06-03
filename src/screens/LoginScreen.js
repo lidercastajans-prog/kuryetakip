@@ -6,7 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '../store/useAuthStore';
-import { Truck, User, Lock, Eye, EyeOff, ChevronRight } from 'lucide-react-native';
+import { Truck, User, Lock, Eye, EyeOff, ChevronRight, Mail, Phone } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail, isLoading } = useAuthStore();
@@ -15,6 +15,8 @@ export default function LoginScreen() {
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [realEmail, setRealEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const logoScale = useRef(new Animated.Value(0)).current;
@@ -28,11 +30,15 @@ export default function LoginScreen() {
   }, []);
 
   const handleEmailAuth = async () => {
-    if (!email.trim() || !password.trim()) return;
     if (mode === 'login') {
+      if (!email.trim() || !password.trim()) return;
       await signInWithEmail(email.trim(), password);
     } else {
-      await signUpWithEmail(email.trim(), password);
+      if (!email.trim() || !password.trim() || !realEmail.trim() || !phone.trim()) {
+        Alert.alert('Eksik Bilgi', 'Lütfen kayıt olmak için tüm alanları doldurun.');
+        return;
+      }
+      await signUpWithEmail(email.trim(), password, realEmail.trim(), phone.trim());
     }
   };
 
@@ -91,6 +97,35 @@ export default function LoginScreen() {
             />
           </View>
 
+          {mode === 'register' && (
+            <>
+              <View style={styles.inputWrapper}>
+                <Mail color="#9CA3AF" size={18} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="E-posta adresi"
+                  placeholderTextColor="#6B7280"
+                  value={realEmail}
+                  onChangeText={setRealEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoCorrect={false}
+                />
+              </View>
+              <View style={styles.inputWrapper}>
+                <Phone color="#9CA3AF" size={18} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Telefon numarası"
+                  placeholderTextColor="#6B7280"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </>
+          )}
+
           <View style={styles.inputWrapper}>
             <Lock color="#9CA3AF" size={18} style={styles.inputIcon} />
             <TextInput
@@ -111,9 +146,9 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.primaryButton, (!email || !password) && styles.primaryButtonDisabled]}
+            style={[styles.primaryButton, (mode === 'login' ? (!email || !password) : (!email || !password || !realEmail || !phone)) && styles.primaryButtonDisabled]}
             onPress={handleEmailAuth}
-            disabled={isLoading || !email || !password}
+            disabled={isLoading || (mode === 'login' ? (!email || !password) : (!email || !password || !realEmail || !phone))}
             activeOpacity={0.85}
           >
             {isLoading ? (

@@ -184,14 +184,20 @@ export const useAuthStore = create((set, get) => ({
   },
 
   // Sign up with Username & Password
-  signUpWithEmail: async (username, password) => {
+  signUpWithEmail: async (username, password, realEmail, phone) => {
     try {
       set({ isLoading: true });
       const email = `${username.toLowerCase()}@kuryeapp.app`;
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { username } },
+        options: { 
+          data: { 
+            username,
+            contact_email: realEmail,
+            phone: phone 
+          } 
+        },
       });
       if (error) throw error;
       Alert.alert('Kayıt Başarılı', 'Hesabınız oluşturuldu. Giriş yapabilirsiniz.');
