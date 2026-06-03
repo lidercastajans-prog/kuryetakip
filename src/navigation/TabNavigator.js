@@ -26,10 +26,8 @@ function MainTabs() {
   );
 
   // Dynamic bottom inset to prevent cutoff on notch devices and mobile browsers
-  const bottomInset = insets.bottom > 0 
-    ? insets.bottom 
-    : (isIOS ? 28 : (isMobileWeb ? 16 : (isWeb ? 8 : 8)));
-  const tabBarHeight = 64 + bottomInset;
+  const bottomInset = insets.bottom > 0 ? insets.bottom : (isIOS ? 24 : 0);
+  const tabBarHeight = isWeb ? 74 : (60 + bottomInset);
 
   return (
     <Tab.Navigator
@@ -40,12 +38,14 @@ function MainTabs() {
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
+          marginBottom: isWeb ? 6 : 4,
         },
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 0,
-          minHeight: 60 + bottomInset,
-          paddingBottom: bottomInset,
+          height: tabBarHeight,
+          paddingTop: 12,
+          paddingBottom: isWeb ? 12 : bottomInset,
           ...Platform.select({
             ios: {
               shadowColor: '#000',
@@ -118,7 +118,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 4,
-    minHeight: 36,
   },
   iconContainerActive: {},
   activeDot: {
