@@ -5,9 +5,24 @@ import AppNavigator from './src/navigation/TabNavigator';
 
 // Inject professional CSS on web to lock the viewport and solve mobile browser height bugs (100vh scroll issue)
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  // Ensure viewport-fit=cover for safe area insets on mobile browsers
+  const existingMeta = document.querySelector('meta[name="viewport"]');
+  if (existingMeta) {
+    const content = existingMeta.getAttribute('content') || '';
+    if (!content.includes('viewport-fit=cover')) {
+      existingMeta.setAttribute('content', content + ', viewport-fit=cover');
+    }
+  } else {
+    const meta = document.createElement('meta');
+    meta.name = 'viewport';
+    meta.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
+    document.head.appendChild(meta);
+  }
+
   const style = document.createElement('style');
   style.textContent = `
     html, body, #root {
+      height: 100dvh !important;
       height: 100% !important;
       width: 100% !important;
       margin: 0 !important;
@@ -21,6 +36,11 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       -webkit-text-size-adjust: 100%;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
+    }
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      #root {
+        padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+      }
     }
   `;
   document.head.appendChild(style);

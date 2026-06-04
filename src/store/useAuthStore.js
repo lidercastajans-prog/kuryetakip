@@ -172,11 +172,19 @@ export const useAuthStore = create((set, get) => ({
     try {
       set({ isLoading: true });
       const email = `${username.toLowerCase()}@kuryeapp.app`;
+      // On success, the onAuthStateChange listener flips isAuthenticated.
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       return { success: true };
     } catch (error) {
-      Alert.alert('Giriş Hatası', 'Kullanıcı adı veya şifre hatalı.');
+      // Surface the real reason instead of always blaming the password.
+      let message = error.message || 'Giriş yapılamadı.';
+      if (message === 'Invalid login credentials') {
+        message = 'Kullanıcı adı veya şifre hatalı.';
+      } else if (message === 'Email not confirmed') {
+        message = 'Hesabınız henüz doğrulanmamış. Supabase panelinde "Confirm email" ayarını kapatın.';
+      }
+      Alert.alert('Giriş Hatası', message);
       return { success: false };
     } finally {
       set({ isLoading: false });
@@ -188,22 +196,45 @@ export const useAuthStore = create((set, get) => ({
     try {
       set({ isLoading: true });
       const email = `${username.toLowerCase()}@kuryeapp.app`;
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { 
-          data: { 
+        options: {
+          data: {
             username,
             contact_email: realEmail,
-            phone: phone 
-          } 
+            phone: phone
+          }
         },
       });
       if (error) throw error;
-      Alert.alert('Kayıt Başarılı', 'Hesabınız oluşturuldu. Giriş yapabilirsiniz.');
-      return { success: true };
+
+      // Email confirmation disabled → signUp returns a session and the user is
+      // already logged in (onAuthStateChange handles the navigation). This is
+      // what makes "register then use the app" work without a manual login step.
+      if (data.session) {
+        return { success: true };
+      }
+
+      // No session returned → try to log in straight away with the same creds.
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (!signInError) {
+        return { success: true };
+      }
+
+      // Auto-login failed → email confirmation is enabled on the Supabase project,
+      // which can never complete for these internal @kuryeapp.app addresses.
+      Alert.alert(
+        'Kayıt Tamamlanamadı',
+        'Hesap oluşturuldu ancak otomatik giriş yapılamadı. Supabase panelinde Authentication → Providers → Email altından "Confirm email" ayarını kapatın, ardından tekrar deneyin.'
+      );
+      return { success: false };
     } catch (error) {
-      Alert.alert('Kayıt Hatası', error.message || 'Kayıt oluşturulamadı.');
+      let message = error.message || 'Kayıt oluşturulamadı.';
+      if (message === 'User already registered') {
+        message = 'Bu kullanıcı adı zaten kayıtlı. Giriş yapmayı deneyin.';
+      }
+      Alert.alert('Kayıt Hatası', message);
       return { success: false };
     } finally {
       set({ isLoading: false });

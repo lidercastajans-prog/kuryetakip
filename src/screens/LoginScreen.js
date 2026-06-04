@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated,
-  ActivityIndicator, Platform, TextInput, KeyboardAvoidingView, ScrollView
+  ActivityIndicator, Platform, TextInput, KeyboardAvoidingView, ScrollView, Alert
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';

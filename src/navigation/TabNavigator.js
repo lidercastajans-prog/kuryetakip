@@ -17,17 +17,20 @@ const Tab = createBottomTabNavigator();
 function MainTabs() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
-  const isIOS = Platform.OS === 'ios';
 
   // Detect if running on mobile browser
   const isMobileWeb = isWeb && (
-    typeof navigator !== 'undefined' && 
+    typeof navigator !== 'undefined' &&
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
   );
 
-  // Dynamic bottom inset to prevent cutoff on notch devices and mobile browsers
-  const bottomInset = insets.bottom > 0 ? insets.bottom : (isIOS ? 24 : 0);
-  const tabBarHeight = isWeb ? 74 : (60 + bottomInset);
+  // Safe-area aware bottom spacing so the bar clears the home indicator / browser toolbar.
+  // Fall back to a sensible default when the device reports no inset.
+  const bottomInset = insets.bottom > 0 ? insets.bottom : (isMobileWeb ? 16 : 8);
+
+  // Explicit height = content area (icon + label) + bottom safe spacing.
+  // Without this the bar relies on minHeight and clips the labels.
+  const tabBarHeight = 60 + bottomInset;
 
   return (
     <Tab.Navigator
@@ -38,14 +41,14 @@ function MainTabs() {
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
-          marginBottom: 4,
+          marginBottom: 2,
         },
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 0,
-          minHeight: 60,
-          paddingBottom: Platform.OS === 'web' ? 8 : (insets.bottom > 0 ? insets.bottom : 8),
+          height: tabBarHeight,
           paddingTop: 8,
+          paddingBottom: bottomInset,
           ...Platform.select({
             ios: {
               shadowColor: '#000',
@@ -58,7 +61,6 @@ function MainTabs() {
             },
             web: {
               boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.06)',
-              overflow: 'visible',
             }
           }),
         },
@@ -118,7 +120,6 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 4,
   },
   iconContainerActive: {},
   activeDot: {
