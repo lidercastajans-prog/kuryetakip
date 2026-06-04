@@ -30,7 +30,7 @@ function MainTabs() {
 
   // Explicit height = content area (icon + label) + bottom safe spacing.
   // Without this the bar relies on minHeight and clips the labels.
-  const tabBarHeight = 60 + bottomInset;
+  const tabBarHeight = 64 + bottomInset;
 
   return (
     <Tab.Navigator
@@ -40,8 +40,11 @@ function MainTabs() {
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarLabelStyle: {
           fontSize: 11,
+          // lineHeight must exceed fontSize so descenders (p, ş, g) aren't clipped.
+          lineHeight: 16,
           fontWeight: '600',
-          marginBottom: 2,
+          marginBottom: 4,
+          paddingBottom: 2,
         },
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
