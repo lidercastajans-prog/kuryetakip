@@ -107,7 +107,9 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      documentTitle={{ formatter: () => 'KuryeTakip' }}
+    >
       {isAuthenticated ? <MainTabs /> : <LoginScreen />}
     </NavigationContainer>
   );

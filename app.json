@@ -22,6 +22,8 @@
     },
     "web": {
       "output": "single",
+      "name": "KuryeTakip",
+      "shortName": "KuryeTakip",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [

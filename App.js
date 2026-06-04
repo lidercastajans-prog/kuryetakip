@@ -5,6 +5,9 @@ import AppNavigator from './src/navigation/TabNavigator';
 
 // Inject professional CSS on web to lock the viewport and solve mobile browser height bugs (100vh scroll issue)
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  // Set the browser tab / document title (Expo doesn't set one, so it shows "undefined")
+  document.title = 'KuryeTakip';
+
   // Ensure viewport-fit=cover for safe area insets on mobile browsers
   const existingMeta = document.querySelector('meta[name="viewport"]');
   if (existingMeta) {
