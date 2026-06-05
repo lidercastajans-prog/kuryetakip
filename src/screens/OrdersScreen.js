@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, Alert, Modal, Animated, Platform, KeyboardAvoidingView,
+  TouchableOpacity, Modal, Animated, Platform, KeyboardAvoidingView,
   Linking, Share
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useStore } from '../store/useStore';
 import { useToast } from '../store/useToast';
+import { useConfirm } from '../store/useConfirm';
 import { PackagePlus, Bike, Car, Truck, History, ListTodo, Download, X, ChevronDown, FileText, Send, Edit2, Trash2, MapPin, Share2, Clock } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -93,6 +94,7 @@ const FadeInView = ({ children, delay = 0, style }) => {
 export default function OrdersScreen() {
   const { orders, customers, addOrder, updateOrderStatus, editOrder, deleteOrder } = useStore();
   const showToast = useToast((s) => s.showToast);
+  const showConfirm = useConfirm((s) => s.showConfirm);
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('active');
   const [formCollapsed, setFormCollapsed] = useState(false);
@@ -151,7 +153,7 @@ export default function OrdersScreen() {
 
   const handleAddOrder = async () => {
     if (!selectedCustomerId || !pickupLocation || !deliveryLocation || !amount) {
-      return Alert.alert('Hata', 'Zorunlu alanları (Müşteri, Semt, Tutar) eksiksiz girin.');
+      return showToast('Zorunlu alanları (Müşteri, Semt, Tutar) eksiksiz girin.', 'error');
     }
     const customer = customers.find(c => c.id === selectedCustomerId);
 
@@ -217,10 +219,13 @@ export default function OrdersScreen() {
   };
 
   const handleDeleteClick = (orderId) => {
-    Alert.alert('Emin misiniz?', 'Siparişi ve tahsilat etkilerini silmek üzeresiniz. Bu işlem geri alınamaz.', [
-      { text: 'İptal', style: 'cancel' },
-      { text: 'Sil', style: 'destructive', onPress: () => deleteOrder(orderId) }
-    ]);
+    showConfirm({
+      title: 'Emin misiniz?',
+      message: 'Siparişi ve tahsilat etkilerini silmek üzeresiniz. Bu işlem geri alınamaz.',
+      confirmText: 'Sil',
+      destructive: true,
+      onConfirm: () => deleteOrder(orderId),
+    });
   };
 
   const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
@@ -293,7 +298,7 @@ export default function OrdersScreen() {
         message: text,
       });
     } catch (error) {
-      Alert.alert('Hata', 'Paylaşım gerçekleştirilemedi.');
+      showToast('Paylaşım gerçekleştirilemedi.', 'error');
     }
   };
 
@@ -307,7 +312,7 @@ export default function OrdersScreen() {
       const end = new Date(exportEndDate.getFullYear(), exportEndDate.getMonth(), exportEndDate.getDate() + 1);
       filteredForExport = filteredForExport.filter(o => new Date(o.date) >= start && new Date(o.date) < end);
       if (filteredForExport.length === 0) {
-        return Alert.alert('Uyarı', 'Seçili filtrelere uygun geçmiş sipariş bulunamadı.');
+        return showToast('Seçili filtrelere uygun geçmiş sipariş bulunamadı.', 'info');
       }
 
       let csvStr = "Tarih;Musteri_Firma;Alinan_Semt;Teslim_Semt;Arac;Kurye_Ad;Kurye_Plaka;Kurye_Tel;Tutar_TL;Not\n";
@@ -320,13 +325,13 @@ export default function OrdersScreen() {
       await FileSystem.writeAsStringAsync(fileUri, csvStr, { encoding: 'utf8' });
 
       if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert("Hata", "Bu cihazda dosya paylaşımı desteklenmiyor.");
+        showToast('Bu cihazda dosya paylaşımı desteklenmiyor.', 'error');
         return;
       }
       await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', dialogTitle: 'Excel/CSV Olarak Paylaş' });
       setExportModalVisible(false);
     } catch (error) {
-      Alert.alert("Hata", "Bir sorun oluştu: " + error.message);
+      showToast('Bir sorun oluştu: ' + error.message, 'error');
     }
   };
 

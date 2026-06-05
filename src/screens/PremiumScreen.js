@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-  Modal, Alert, Platform, RefreshControl, Dimensions
+  Modal, Platform, RefreshControl, Dimensions
 } from 'react-native';
 import Svg, { Rect, G, Text as SvgText, Circle, Line } from 'react-native-svg';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -9,6 +9,8 @@ import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useStore } from '../store/useStore';
+import { useToast } from '../store/useToast';
+import { useConfirm } from '../store/useConfirm';
 import {
   Crown, Plus, TrendingUp, TrendingDown, Wallet, Fuel, Wrench,
   UsersRound, Building, MoreHorizontal, X, ChevronDown,
@@ -114,6 +116,8 @@ const DonutChart = ({ segments, total, size = 140 }) => {
 
 export default function PremiumScreen() {
   const { cashTransactions, customers, orders, addCashTransaction, deleteCashTransaction, fetchData } = useStore();
+  const showToast = useToast((s) => s.showToast);
+  const showConfirm = useConfirm((s) => s.showConfirm);
   const insets = useSafeAreaInsets();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -257,38 +261,41 @@ export default function PremiumScreen() {
   const fmtDate = str => new Date(str).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' });
 
   const handleAddTransaction = async () => {
-    if (!txCategory) return Alert.alert('Hata', 'Kategori seçiniz');
-    if (!txAmount || isNaN(Number(txAmount))) return Alert.alert('Hata', 'Geçerli tutar giriniz');
+    if (!txCategory) return showToast('Kategori seçiniz', 'error');
+    if (!txAmount || isNaN(Number(txAmount))) return showToast('Geçerli tutar giriniz', 'error');
     const ok = await addCashTransaction({ type: txType, category: txCategory, amount: Number(txAmount), description: txDescription || txCategory });
     if (ok) {
       setShowAddModal(false);
       setTxType('income'); setTxCategory(''); setTxAmount(''); setTxDescription('');
-      Alert.alert('Başarılı ✓', 'Kasa kaydı oluşturuldu.');
+      showToast('Kasa kaydı oluşturuldu', 'success');
     }
   };
 
-  const handleDelete = id => Alert.alert('Kaydı Sil', 'Emin misiniz?', [
-    { text: 'İptal', style: 'cancel' },
-    { text: 'Sil', style: 'destructive', onPress: () => deleteCashTransaction(id) },
-  ]);
+  const handleDelete = id => showConfirm({
+    title: 'Kaydı Sil',
+    message: 'Bu kasa kaydını silmek istediğinize emin misiniz?',
+    confirmText: 'Sil',
+    destructive: true,
+    onConfirm: () => deleteCashTransaction(id),
+  });
 
   const handleExportCash = async () => {
     try {
-      if (cashTransactions.length === 0) return Alert.alert('Uyarı', 'Dışa aktarılacak kayıt yok.');
+      if (cashTransactions.length === 0) return showToast('Dışa aktarılacak kayıt yok.', 'info');
       let csv = 'Tarih;Tip;Kategori;Tutar;Aciklama\n';
       cashTransactions.forEach(t => {
         csv += `${fmtDate(t.date)};${t.type === 'income' ? 'Gelir' : 'Gider'};${t.category};${t.amount};${t.description || ''}\n`;
       });
       const uri = FileSystem.documentDirectory + 'Kasa_Raporu.csv';
       await FileSystem.writeAsStringAsync(uri, csv, { encoding: 'utf8' });
-      if (!(await Sharing.isAvailableAsync())) return Alert.alert('Hata', 'Paylaşım desteklenmiyor.');
+      if (!(await Sharing.isAvailableAsync())) return showToast('Paylaşım desteklenmiyor.', 'error');
       await Sharing.shareAsync(uri, { mimeType: 'text/csv', dialogTitle: 'Kasa Raporunu Paylaş' });
-    } catch (e) { Alert.alert('Hata', e.message); }
+    } catch (e) { showToast(e.message, 'error'); }
   };
 
   const openBudget = cat => { setEditingBudgetCat(cat); setBudgetInput(budgets[cat] ? String(budgets[cat]) : ''); setShowBudgetModal(true); };
   const saveBudget = () => {
-    if (!budgetInput || isNaN(Number(budgetInput))) return Alert.alert('Hata', 'Geçerli tutar girin');
+    if (!budgetInput || isNaN(Number(budgetInput))) return showToast('Geçerli tutar girin', 'error');
     setBudgets(prev => ({ ...prev, [editingBudgetCat]: Number(budgetInput) }));
     setShowBudgetModal(false);
   };

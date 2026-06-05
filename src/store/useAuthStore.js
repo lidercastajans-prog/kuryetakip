@@ -1,9 +1,13 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import { useToast } from './useToast';
+
+// Toast helper (Alert is a no-op on react-native-web).
+const notify = (message, type = 'error') => useToast.getState().showToast(message, type);
 
 // Required for web browser auth session
 WebBrowser.maybeCompleteAuthSession();
@@ -161,7 +165,7 @@ export const useAuthStore = create((set, get) => ({
       }
     } catch (error) {
       console.error('Google Sign-In error:', error);
-      Alert.alert('Giriş Hatası', error.message || 'Google ile giriş yapılamadı. Lütfen tekrar deneyin.');
+      notify(error.message || 'Google ile giriş yapılamadı. Lütfen tekrar deneyin.');
     } finally {
       set({ isLoading: false });
     }
@@ -184,7 +188,7 @@ export const useAuthStore = create((set, get) => ({
       } else if (message === 'Email not confirmed') {
         message = 'Hesabınız henüz doğrulanmamış. Supabase panelinde "Confirm email" ayarını kapatın.';
       }
-      Alert.alert('Giriş Hatası', message);
+      notify(message);
       return { success: false };
     } finally {
       set({ isLoading: false });
@@ -224,17 +228,14 @@ export const useAuthStore = create((set, get) => ({
 
       // Auto-login failed → email confirmation is enabled on the Supabase project,
       // which can never complete for these internal @kuryeapp.app addresses.
-      Alert.alert(
-        'Kayıt Tamamlanamadı',
-        'Hesap oluşturuldu ancak otomatik giriş yapılamadı. Supabase panelinde Authentication → Providers → Email altından "Confirm email" ayarını kapatın, ardından tekrar deneyin.'
-      );
+      notify('Hesap oluşturuldu ancak otomatik giriş yapılamadı. Lütfen giriş yapmayı deneyin.');
       return { success: false };
     } catch (error) {
       let message = error.message || 'Kayıt oluşturulamadı.';
       if (message === 'User already registered') {
         message = 'Bu kullanıcı adı zaten kayıtlı. Giriş yapmayı deneyin.';
       }
-      Alert.alert('Kayıt Hatası', message);
+      notify(message);
       return { success: false };
     } finally {
       set({ isLoading: false });
@@ -255,7 +256,7 @@ export const useAuthStore = create((set, get) => ({
       });
     } catch (error) {
       console.error('Sign out error:', error);
-      Alert.alert('Çıkış Hatası', 'Çıkış yapılamadı.');
+      notify('Çıkış yapılamadı.');
     }
   },
 }));

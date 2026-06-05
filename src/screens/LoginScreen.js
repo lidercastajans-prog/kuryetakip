@@ -1,15 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated,
-  ActivityIndicator, Platform, TextInput, KeyboardAvoidingView, ScrollView, Alert
+  ActivityIndicator, Platform, TextInput, KeyboardAvoidingView, ScrollView
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '../store/useAuthStore';
+import { useToast } from '../store/useToast';
 import { Truck, User, Lock, Eye, EyeOff, ChevronRight, Mail, Phone } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail, isLoading } = useAuthStore();
+  const showToast = useToast((s) => s.showToast);
   const insets = useSafeAreaInsets();
 
   const [mode, setMode] = useState('login');
@@ -35,7 +37,7 @@ export default function LoginScreen() {
       await signInWithEmail(email.trim(), password);
     } else {
       if (!email.trim() || !password.trim() || !realEmail.trim() || !phone.trim()) {
-        Alert.alert('Eksik Bilgi', 'Lütfen kayıt olmak için tüm alanları doldurun.');
+        showToast('Lütfen kayıt olmak için tüm alanları doldurun.', 'error');
         return;
       }
       await signUpWithEmail(email.trim(), password, realEmail.trim(), phone.trim());

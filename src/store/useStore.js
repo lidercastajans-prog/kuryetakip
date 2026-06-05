@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import { Alert } from 'react-native';
+import { useToast } from './useToast';
+
+// Toast helper for the store (Alert is a no-op on react-native-web).
+const notify = (message, type = 'error') => useToast.getState().showToast(message, type);
 
 export const useStore = create((set, get) => ({
   customers: [],
@@ -50,7 +53,7 @@ export const useStore = create((set, get) => ({
       });
     } catch (error) {
       console.error('Veri çekme hatası:', error.message);
-      Alert.alert('Hata', 'Veriler buluttan alınamadı.');
+      notify('Veriler buluttan alınamadı.');
       set({ isLoading: false });
     }
   },
@@ -80,7 +83,7 @@ export const useStore = create((set, get) => ({
       }));
     } catch (error) {
        console.error(error);
-       Alert.alert('Kayıt Hatası', 'Müşteri buluta kaydedilemedi.');
+       notify('Müşteri buluta kaydedilemedi.');
     }
   },
 
@@ -98,7 +101,7 @@ export const useStore = create((set, get) => ({
       }));
     } catch (error) {
       console.error(error);
-      Alert.alert('Hata', 'Vade tarihi güncellenemedi.');
+      notify('Vade tarihi güncellenemedi.');
     }
   },
 
@@ -115,10 +118,10 @@ export const useStore = create((set, get) => ({
         customers: state.customers.filter((c) => c.id !== customerId),
         orders: state.orders.filter((o) => o.customerId !== customerId),
       }));
-      Alert.alert('Başarılı', 'Müşteri başarıyla silindi.');
+      notify('Müşteri başarıyla silindi.', 'success');
     } catch (error) {
       console.error(error);
-      Alert.alert('Silme Hatası', 'Müşteri silinemedi.');
+      notify('Müşteri silinemedi.');
     }
   },
 
@@ -163,7 +166,7 @@ export const useStore = create((set, get) => ({
       return true;
     } catch (error) {
        console.error('addOrder error:', error);
-       Alert.alert('Sipariş Hatası', 'Sipariş buluta iletilemedi: ' + (error.message || ''));
+       notify('Sipariş iletilemedi: ' + (error.message || ''));
        throw error;
     }
   },
@@ -184,7 +187,7 @@ export const useStore = create((set, get) => ({
       }));
     } catch (error) {
        console.error(error);
-       Alert.alert('Güncelleme Hatası', 'Durum bulut sunucusunda güncellenemedi.');
+       notify('Durum güncellenemedi.');
     }
   },
 
@@ -217,10 +220,10 @@ export const useStore = create((set, get) => ({
         ),
       }));
 
-      Alert.alert('Başarılı', 'Sipariş silindi ve bakiye güncellendi.');
+      notify('Sipariş silindi ve bakiye güncellendi.', 'success');
     } catch (error) {
       console.error(error);
-      Alert.alert('Silme Hatası', 'Sipariş silinemedi.');
+      notify('Sipariş silinemedi.');
     }
   },
 
@@ -266,7 +269,7 @@ export const useStore = create((set, get) => ({
       return true;
     } catch (error) {
       console.error('editOrder error:', error);
-      Alert.alert('Güncelleme Hatası', 'Sipariş düzenlenemedi: ' + (error.message || ''));
+      notify('Sipariş düzenlenemedi: ' + (error.message || ''));
       throw error;
     }
   },
@@ -316,7 +319,7 @@ export const useStore = create((set, get) => ({
       }));
     } catch (error) {
        console.error(error);
-       Alert.alert('Tahsilat Hatası', 'Ödeme buluta işlenemedi.');
+       notify('Ödeme işlenemedi.');
     }
   },
 
@@ -347,7 +350,7 @@ export const useStore = create((set, get) => ({
       return true;
     } catch (error) {
       console.error(error);
-      Alert.alert('Kasa Hatası', 'Kasa kaydı oluşturulamadı.');
+      notify('Kasa kaydı oluşturulamadı.');
       return false;
     }
   },
@@ -365,10 +368,10 @@ export const useStore = create((set, get) => ({
         cashTransactions: state.cashTransactions.filter((t) => t.id !== transactionId),
       }));
 
-      Alert.alert('Başarılı', 'Kasa kaydı silindi.');
+      notify('Kasa kaydı silindi.', 'success');
     } catch (error) {
       console.error(error);
-      Alert.alert('Silme Hatası', 'Kasa kaydı silinemedi.');
+      notify('Kasa kaydı silinemedi.');
     }
   },
 }));

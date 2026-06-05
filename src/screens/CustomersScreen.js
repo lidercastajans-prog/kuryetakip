@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, Alert, Animated, Platform, KeyboardAvoidingView
+  TouchableOpacity, Animated, Platform, KeyboardAvoidingView
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useStore } from '../store/useStore';
+import { useToast } from '../store/useToast';
+import { useConfirm } from '../store/useConfirm';
 import { UserPlus, Wallet, Building2, MapPin, Phone, CreditCard, ChevronDown, Trash2, Calendar, Clock } from 'lucide-react-native';
 
 const FadeInView = ({ children, delay = 0, style }) => {
@@ -28,6 +30,8 @@ const FadeInView = ({ children, delay = 0, style }) => {
 
 export default function CustomersScreen() {
   const { customers, addCustomer, addPayment, deleteCustomer, updateCustomerDueDate } = useStore();
+  const showToast = useToast((s) => s.showToast);
+  const showConfirm = useConfirm((s) => s.showConfirm);
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -75,24 +79,27 @@ export default function CustomersScreen() {
   };
 
   const handleAddCustomer = () => {
-    if (!name) return Alert.alert('Hata', 'Müşteri / Firma adı zorunludur');
+    if (!name) return showToast('Müşteri / Firma adı zorunludur', 'error');
     addCustomer({ name, phone, taxOffice, taxNumber, address, due_date: dueDate ? dueDate.toISOString() : null });
     setName(''); setPhone(''); setTaxOffice(''); setTaxNumber(''); setAddress(''); setDueDate(null); setShowDueCal(false);
-    Alert.alert('Başarılı ✓', 'Müşteri başarıyla eklendi.');
+    showToast('Müşteri başarıyla eklendi', 'success');
   };
 
   const handleAddPayment = () => {
-    if (!paymentCustomerId || !paymentAmount) return Alert.alert('Hata', 'Müşteri ve tahsilat tutarı gereklidir');
+    if (!paymentCustomerId || !paymentAmount) return showToast('Müşteri ve tahsilat tutarı gereklidir', 'error');
     addPayment(paymentCustomerId, paymentAmount);
     setPaymentCustomerId(''); setPaymentAmount('');
-    Alert.alert('Başarılı ✓', 'Tahsilat alındı, cari bakiyeden düşüldü.');
+    showToast('Tahsilat alındı, cari bakiyeden düşüldü', 'success');
   };
 
   const handleDeleteCustomer = (customerId, customerName) => {
-    Alert.alert('Müşteriyi Sil', `${customerName} isimli müşteriyi kalıcı olarak silmek istediğinize emin misiniz? Bu müşteriye ait siparişler de listenizden kaldırılacaktır.`, [
-      { text: 'İptal', style: 'cancel' },
-      { text: 'Sil', style: 'destructive', onPress: () => deleteCustomer(customerId) }
-    ]);
+    showConfirm({
+      title: 'Müşteriyi Sil',
+      message: `${customerName} isimli müşteriyi kalıcı olarak silmek istediğinize emin misiniz? Bu müşteriye ait siparişler de listenizden kaldırılacaktır.`,
+      confirmText: 'Sil',
+      destructive: true,
+      onConfirm: () => deleteCustomer(customerId),
+    });
   };
 
   const getInitials = (n) => {
