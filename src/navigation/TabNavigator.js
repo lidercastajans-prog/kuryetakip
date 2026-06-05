@@ -10,6 +10,7 @@ import OrdersScreen from '../screens/OrdersScreen';
 import CustomersScreen from '../screens/CustomersScreen';
 import PremiumScreen from '../screens/PremiumScreen';
 import LoginScreen from '../screens/LoginScreen';
+import NewPasswordScreen from '../screens/NewPasswordScreen';
 import { useAuthStore } from '../store/useAuthStore';
 
 const Tab = createBottomTabNavigator();
@@ -92,7 +93,7 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
-  const { isAuthenticated, isLoading, initAuth } = useAuthStore();
+  const { isAuthenticated, isLoading, recoveryMode, initAuth } = useAuthStore();
 
   useEffect(() => {
     initAuth();
@@ -110,7 +111,7 @@ export default function AppNavigator() {
     <NavigationContainer
       documentTitle={{ formatter: () => 'KuryeTakip' }}
     >
-      {isAuthenticated ? <MainTabs /> : <LoginScreen />}
+      {recoveryMode ? <NewPasswordScreen /> : isAuthenticated ? <MainTabs /> : <LoginScreen />}
     </NavigationContainer>
   );
 }

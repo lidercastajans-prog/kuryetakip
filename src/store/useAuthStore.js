@@ -17,6 +17,7 @@ export const useAuthStore = create((set, get) => ({
   session: null,
   isLoading: true,
   isAuthenticated: false,
+  recoveryMode: false,
   profile: null,
 
   // Initialize auth state on app launch
@@ -47,6 +48,8 @@ export const useAuthStore = create((set, get) => ({
             user: session.user,
             session,
             isAuthenticated: true,
+            // A password-recovery link signs the user in; gate the UI on this flag.
+            recoveryMode: _event === 'PASSWORD_RECOVERY',
             profile: {
               email: session.user.email,
               name: session.user.user_metadata?.full_name || session.user.email,
@@ -58,6 +61,7 @@ export const useAuthStore = create((set, get) => ({
             user: null,
             session: null,
             isAuthenticated: false,
+            recoveryMode: false,
             profile: null,
           });
         }
@@ -171,22 +175,24 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  // Sign in with Username & Password
-  signInWithEmail: async (username, password) => {
+  // Sign in with Email & Password
+  signInWithEmail: async (email, password) => {
     try {
       set({ isLoading: true });
-      const email = `${username.toLowerCase()}@kuryeapp.app`;
       // On success, the onAuthStateChange listener flips isAuthenticated.
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
       if (error) throw error;
       return { success: true };
     } catch (error) {
       // Surface the real reason instead of always blaming the password.
       let message = error.message || 'Giriş yapılamadı.';
       if (message === 'Invalid login credentials') {
-        message = 'Kullanıcı adı veya şifre hatalı.';
+        message = 'E-posta veya şifre hatalı.';
       } else if (message === 'Email not confirmed') {
-        message = 'Hesabınız henüz doğrulanmamış. Supabase panelinde "Confirm email" ayarını kapatın.';
+        message = 'Hesabınız henüz doğrulanmamış. Lütfen e-postanızı onaylayın.';
       }
       notify(message);
       return { success: false };
@@ -195,20 +201,19 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  // Sign up with Username & Password
-  signUpWithEmail: async (username, password, realEmail, phone) => {
+  // Sign up with Email & Password
+  signUpWithEmail: async (name, email, phone, password) => {
     try {
       set({ isLoading: true });
-      const email = `${username.toLowerCase()}@kuryeapp.app`;
+      const cleanEmail = email.trim().toLowerCase();
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: cleanEmail,
         password,
         options: {
           data: {
-            username,
-            contact_email: realEmail,
-            phone: phone
-          }
+            full_name: name,
+            phone: phone,
+          },
         },
       });
       if (error) throw error;
@@ -221,21 +226,56 @@ export const useAuthStore = create((set, get) => ({
       }
 
       // No session returned → try to log in straight away with the same creds.
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
       if (!signInError) {
         return { success: true };
       }
 
-      // Auto-login failed → email confirmation is enabled on the Supabase project,
-      // which can never complete for these internal @kuryeapp.app addresses.
+      // Auto-login failed → email confirmation is enabled on the Supabase project.
       notify('Hesap oluşturuldu ancak otomatik giriş yapılamadı. Lütfen giriş yapmayı deneyin.');
       return { success: false };
     } catch (error) {
       let message = error.message || 'Kayıt oluşturulamadı.';
       if (message === 'User already registered') {
-        message = 'Bu kullanıcı adı zaten kayıtlı. Giriş yapmayı deneyin.';
+        message = 'Bu e-posta zaten kayıtlı. Giriş yapmayı deneyin.';
       }
       notify(message);
+      return { success: false };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // Send a password-reset email
+  sendPasswordReset: async (email) => {
+    try {
+      set({ isLoading: true });
+      const redirectTo = Platform.OS === 'web'
+        ? (typeof window !== 'undefined' ? window.location.origin : undefined)
+        : Linking.createURL('reset-password');
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
+      if (error) throw error;
+      notify('Şifre sıfırlama bağlantısı e-postanıza gönderildi.', 'success');
+      return { success: true };
+    } catch (error) {
+      notify(error.message || 'Sıfırlama bağlantısı gönderilemedi.');
+      return { success: false };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // Set a new password (used while in password-recovery mode)
+  updatePassword: async (newPassword) => {
+    try {
+      set({ isLoading: true });
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      set({ recoveryMode: false });
+      notify('Şifreniz güncellendi.', 'success');
+      return { success: true };
+    } catch (error) {
+      notify(error.message || 'Şifre güncellenemedi.');
       return { success: false };
     } finally {
       set({ isLoading: false });

@@ -9,16 +9,18 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../store/useToast';
 import { Truck, User, Lock, Eye, EyeOff, ChevronRight, Mail, Phone } from 'lucide-react-native';
 
+const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
 export default function LoginScreen() {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, isLoading } = useAuthStore();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, isLoading } = useAuthStore();
   const showToast = useToast((s) => s.showToast);
   const insets = useSafeAreaInsets();
 
-  const [mode, setMode] = useState('login');
+  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot'
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [realEmail, setRealEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const logoScale = useRef(new Animated.Value(0)).current;
@@ -32,17 +34,32 @@ export default function LoginScreen() {
   }, []);
 
   const handleEmailAuth = async () => {
+    if (mode === 'forgot') {
+      if (!email.trim()) return showToast('Lütfen e-posta adresinizi girin.', 'error');
+      if (!isValidEmail(email.trim())) return showToast('Geçerli bir e-posta adresi girin.', 'error');
+      const res = await sendPasswordReset(email.trim());
+      if (res?.success) setMode('login');
+      return;
+    }
     if (mode === 'login') {
       if (!email.trim() || !password.trim()) return;
+      if (!isValidEmail(email.trim())) return showToast('Geçerli bir e-posta adresi girin.', 'error');
       await signInWithEmail(email.trim(), password);
     } else {
-      if (!email.trim() || !password.trim() || !realEmail.trim() || !phone.trim()) {
-        showToast('Lütfen kayıt olmak için tüm alanları doldurun.', 'error');
-        return;
+      if (!name.trim() || !email.trim() || !phone.trim() || !password.trim()) {
+        return showToast('Lütfen kayıt olmak için tüm alanları doldurun.', 'error');
       }
-      await signUpWithEmail(email.trim(), password, realEmail.trim(), phone.trim());
+      if (!isValidEmail(email.trim())) return showToast('Geçerli bir e-posta adresi girin.', 'error');
+      await signUpWithEmail(name.trim(), email.trim(), phone.trim(), password);
     }
   };
+
+  const primaryDisabled =
+    mode === 'forgot' ? !email
+      : mode === 'login' ? (!email || !password)
+        : (!name || !email || !phone || !password);
+
+  const primaryLabel = mode === 'login' ? 'Giriş Yap' : mode === 'register' ? 'Kayıt Ol' : 'Bağlantı Gönder';
 
   return (
     <KeyboardAvoidingView
@@ -71,121 +88,144 @@ export default function LoginScreen() {
         </View>
 
         <Animated.View style={[styles.formCard, { opacity: contentOpacity }]}>
-          <View style={styles.modeToggle}>
-            <TouchableOpacity
-              style={[styles.modeBtn, mode === 'login' && styles.modeBtnActive]}
-              onPress={() => setMode('login')}
-            >
-              <Text style={[styles.modeBtnText, mode === 'login' && styles.modeBtnTextActive]}>Giriş Yap</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modeBtn, mode === 'register' && styles.modeBtnActive]}
-              onPress={() => setMode('register')}
-            >
-              <Text style={[styles.modeBtnText, mode === 'register' && styles.modeBtnTextActive]}>Kayıt Ol</Text>
-            </TouchableOpacity>
-          </View>
+          {mode !== 'forgot' ? (
+            <View style={styles.modeToggle}>
+              <TouchableOpacity
+                style={[styles.modeBtn, mode === 'login' && styles.modeBtnActive]}
+                onPress={() => setMode('login')}
+              >
+                <Text style={[styles.modeBtnText, mode === 'login' && styles.modeBtnTextActive]}>Giriş Yap</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modeBtn, mode === 'register' && styles.modeBtnActive]}
+                onPress={() => setMode('register')}
+              >
+                <Text style={[styles.modeBtnText, mode === 'register' && styles.modeBtnTextActive]}>Kayıt Ol</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.forgotHeader}>
+              <Text style={styles.forgotTitle}>Şifre Sıfırla</Text>
+              <Text style={styles.forgotSubtitle}>E-posta adresinize sıfırlama bağlantısı göndereceğiz.</Text>
+            </View>
+          )}
+
+          {mode === 'register' && (
+            <View style={styles.inputWrapper}>
+              <User color="#9CA3AF" size={18} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Ad / İşletme adı"
+                placeholderTextColor="#6B7280"
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+              />
+            </View>
+          )}
 
           <View style={styles.inputWrapper}>
-            <User color="#9CA3AF" size={18} style={styles.inputIcon} />
+            <Mail color="#9CA3AF" size={18} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Kullanıcı adı"
+              placeholder="E-posta adresi"
               placeholderTextColor="#6B7280"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
+              keyboardType="email-address"
               autoCorrect={false}
             />
           </View>
 
           {mode === 'register' && (
-            <>
-              <View style={styles.inputWrapper}>
-                <Mail color="#9CA3AF" size={18} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="E-posta adresi"
-                  placeholderTextColor="#6B7280"
-                  value={realEmail}
-                  onChangeText={setRealEmail}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  autoCorrect={false}
-                />
-              </View>
-              <View style={styles.inputWrapper}>
-                <Phone color="#9CA3AF" size={18} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Telefon numarası"
-                  placeholderTextColor="#6B7280"
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                />
-              </View>
-            </>
+            <View style={styles.inputWrapper}>
+              <Phone color="#9CA3AF" size={18} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Telefon numarası"
+                placeholderTextColor="#6B7280"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+              />
+            </View>
           )}
 
-          <View style={styles.inputWrapper}>
-            <Lock color="#9CA3AF" size={18} style={styles.inputIcon} />
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
-              placeholder="Şifre"
-              placeholderTextColor="#6B7280"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-              {showPassword
-                ? <EyeOff color="#6B7280" size={18} />
-                : <Eye color="#6B7280" size={18} />
-              }
+          {mode !== 'forgot' && (
+            <View style={styles.inputWrapper}>
+              <Lock color="#9CA3AF" size={18} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="Şifre"
+                placeholderTextColor="#6B7280"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                {showPassword
+                  ? <EyeOff color="#6B7280" size={18} />
+                  : <Eye color="#6B7280" size={18} />
+                }
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {mode === 'login' && (
+            <TouchableOpacity onPress={() => setMode('forgot')} style={styles.forgotLink}>
+              <Text style={styles.linkText}>Şifremi unuttum?</Text>
             </TouchableOpacity>
-          </View>
+          )}
 
           <TouchableOpacity
-            style={[styles.primaryButton, (mode === 'login' ? (!email || !password) : (!email || !password || !realEmail || !phone)) && styles.primaryButtonDisabled]}
+            style={[styles.primaryButton, primaryDisabled && styles.primaryButtonDisabled]}
             onPress={handleEmailAuth}
-            disabled={isLoading || (mode === 'login' ? (!email || !password) : (!email || !password || !realEmail || !phone))}
+            disabled={isLoading || primaryDisabled}
             activeOpacity={0.85}
           >
             {isLoading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.primaryButtonText}>
-                {mode === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
-              </Text>
+              <Text style={styles.primaryButtonText}>{primaryLabel}</Text>
             )}
           </TouchableOpacity>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>veya</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {mode === 'forgot' && (
+            <TouchableOpacity onPress={() => setMode('login')} style={styles.backLink}>
+              <Text style={styles.linkText}>← Giriş ekranına dön</Text>
+            </TouchableOpacity>
+          )}
 
-          <TouchableOpacity
-            style={styles.googleButton}
-            onPress={signInWithGoogle}
-            disabled={isLoading}
-            activeOpacity={0.85}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#111827" size="small" />
-            ) : (
-              <>
-                <View style={styles.googleIconContainer}>
-                  <Text style={styles.googleIcon}>G</Text>
-                </View>
-                <Text style={styles.googleButtonText}>Google ile Giriş Yap</Text>
-                <ChevronRight color="#9CA3AF" size={18} />
-              </>
-            )}
-          </TouchableOpacity>
+          {mode !== 'forgot' && (
+            <>
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>veya</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.googleButton}
+                onPress={signInWithGoogle}
+                disabled={isLoading}
+                activeOpacity={0.85}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#111827" size="small" />
+                ) : (
+                  <>
+                    <View style={styles.googleIconContainer}>
+                      <Text style={styles.googleIcon}>G</Text>
+                    </View>
+                    <Text style={styles.googleButtonText}>Google ile Giriş Yap</Text>
+                    <ChevronRight color="#9CA3AF" size={18} />
+                  </>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
         </Animated.View>
 
         <Text style={styles.disclaimer}>
@@ -231,6 +271,9 @@ const styles = StyleSheet.create({
   modeBtnActive: { backgroundColor: '#EA580C' },
   modeBtnText: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.4)' },
   modeBtnTextActive: { color: '#FFFFFF' },
+  forgotHeader: { alignItems: 'center', marginBottom: 4, gap: 6 },
+  forgotTitle: { fontSize: 19, fontWeight: '800', color: '#FFFFFF' },
+  forgotSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 18 },
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 14,
@@ -240,6 +283,9 @@ const styles = StyleSheet.create({
   inputIcon: { marginRight: 10 },
   input: { flex: 1, color: '#FFFFFF', fontSize: 15, fontWeight: '500' },
   eyeBtn: { padding: 4 },
+  forgotLink: { alignSelf: 'flex-end', marginTop: -4, marginBottom: 2 },
+  backLink: { alignSelf: 'center', paddingVertical: 4 },
+  linkText: { color: '#FB923C', fontSize: 13, fontWeight: '600' },
   primaryButton: {
     backgroundColor: '#EA580C', height: 52, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center', marginTop: 4,
