@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/TabNavigator';
+import Toast from './src/components/Toast';
 
 // Inject professional CSS on web to lock the viewport and solve mobile browser height bugs (100vh scroll issue)
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -53,6 +54,7 @@ export default function App() {
   return (
     <SafeAreaProvider style={Platform.OS === 'web' ? { position: 'fixed', top: 0, bottom: 0, left: 0, right: 0, overflow: 'hidden', width: '100%', height: '100%' } : { flex: 1 }}>
       <AppNavigator />
+      <Toast />
     </SafeAreaProvider>
   );
 }

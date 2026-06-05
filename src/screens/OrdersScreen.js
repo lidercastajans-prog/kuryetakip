@@ -7,6 +7,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useStore } from '../store/useStore';
+import { useToast } from '../store/useToast';
 import { PackagePlus, Bike, Car, Truck, History, ListTodo, Download, X, ChevronDown, FileText, Send, Edit2, Trash2, MapPin, Share2, Clock } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -91,6 +92,7 @@ const FadeInView = ({ children, delay = 0, style }) => {
 
 export default function OrdersScreen() {
   const { orders, customers, addOrder, updateOrderStatus, editOrder, deleteOrder } = useStore();
+  const showToast = useToast((s) => s.showToast);
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('active');
   const [formCollapsed, setFormCollapsed] = useState(false);
@@ -170,7 +172,7 @@ export default function OrdersScreen() {
           note,
           due_date: dueDateVal,
         });
-        Alert.alert('Başarılı ✓', 'Sipariş güncellendi.');
+        showToast('Sipariş başarıyla güncellendi', 'success');
       } else {
         await addOrder({
           customerId: customer.id,
@@ -185,7 +187,7 @@ export default function OrdersScreen() {
           note,
           due_date: dueDateVal,
         });
-        Alert.alert('Başarılı ✓', 'Sipariş oluşturuldu ve müşteriye borç yazıldı.');
+        showToast('Sipariş başarıyla oluşturuldu', 'success');
       }
 
       setEditingOrderId(null);
