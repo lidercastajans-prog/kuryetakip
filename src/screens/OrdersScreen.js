@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useStore } from '../store/useStore';
 import { useToast } from '../store/useToast';
 import { useConfirm } from '../store/useConfirm';
+import RefreshButton from '../components/RefreshButton';
 import { PackagePlus, Bike, Car, Truck, History, ListTodo, Download, X, ChevronDown, FileText, Send, Edit2, Trash2, MapPin, Share2, Clock } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -367,9 +368,12 @@ export default function OrdersScreen() {
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
           {/* Header */}
-          <View style={[styles.headerSection, { paddingTop: insets.top + 16 }]}>
-            <Text style={styles.pageTitle}>Siparişler</Text>
-            <Text style={styles.pageSubtitle}>{orders.length} toplam sipariş</Text>
+          <View style={[styles.headerSection, { paddingTop: insets.top + 16, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pageTitle}>Siparişler</Text>
+              <Text style={styles.pageSubtitle}>{orders.length} toplam sipariş</Text>
+            </View>
+            <RefreshButton color="#EA580C" style={{ backgroundColor: '#FFF7ED' }} />
           </View>
 
           {/* New Order Form */}

@@ -8,6 +8,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useStore } from '../store/useStore';
 import { useToast } from '../store/useToast';
 import { useConfirm } from '../store/useConfirm';
+import { customerBalance } from '../lib/balance';
+import RefreshButton from '../components/RefreshButton';
 import { UserPlus, Wallet, Building2, MapPin, Phone, CreditCard, ChevronDown, Trash2, Calendar, Clock } from 'lucide-react-native';
 
 const FadeInView = ({ children, delay = 0, style }) => {
@@ -29,7 +31,7 @@ const FadeInView = ({ children, delay = 0, style }) => {
 };
 
 export default function CustomersScreen() {
-  const { customers, addCustomer, addPayment, deleteCustomer, updateCustomerDueDate } = useStore();
+  const { customers, orders, cashTransactions, addCustomer, addPayment, deleteCustomer, updateCustomerDueDate } = useStore();
   const showToast = useToast((s) => s.showToast);
   const showConfirm = useConfirm((s) => s.showConfirm);
   const insets = useSafeAreaInsets();
@@ -108,7 +110,7 @@ export default function CustomersScreen() {
   };
 
   const totalCustomers = customers.length;
-  const totalDebt = customers.reduce((sum, c) => sum + Math.max(c.balance || 0, 0), 0);
+  const totalDebt = customers.reduce((sum, c) => sum + Math.max(customerBalance(c.id, orders, cashTransactions), 0), 0);
 
   return (
     <View style={styles.safeArea}>
@@ -117,9 +119,12 @@ export default function CustomersScreen() {
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
           {/* Header */}
-          <View style={[styles.headerSection, { paddingTop: insets.top + 16 }]}>
-            <Text style={styles.pageTitle}>Cari Hesaplar</Text>
-            <Text style={styles.pageSubtitle}>{totalCustomers} müşteri • {totalDebt.toLocaleString('tr-TR')} ₺ toplam</Text>
+          <View style={[styles.headerSection, { paddingTop: insets.top + 16, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pageTitle}>Cari Hesaplar</Text>
+              <Text style={styles.pageSubtitle}>{totalCustomers} müşteri • {totalDebt.toLocaleString('tr-TR')} ₺ toplam</Text>
+            </View>
+            <RefreshButton color="#EA580C" style={{ backgroundColor: '#FFF7ED' }} />
           </View>
 
           {/* New Customer Form */}
@@ -277,7 +282,8 @@ export default function CustomersScreen() {
           ) : (
             customers.map((c, index) => {
               const isSelected = paymentCustomerId === c.id;
-              const hasDebt = c.balance > 0;
+              const bal = customerBalance(c.id, orders, cashTransactions);
+              const hasDebt = bal > 0;
               const dueStatus = getDueStatus(c.due_date);
 
               return (
@@ -345,7 +351,7 @@ export default function CustomersScreen() {
                         <Text style={styles.balanceLabel}>Borç</Text>
                         <View style={[styles.balanceBadge, hasDebt ? styles.debtBadge : styles.clearBadge]}>
                           <Text style={[styles.balanceValue, hasDebt ? styles.debtText : styles.clearText]}>
-                            {c.balance} ₺
+                            {bal} ₺
                           </Text>
                         </View>
                       </View>
@@ -411,7 +417,7 @@ export default function CustomersScreen() {
                         </View>
                         <View>
                           <Text style={styles.paymentTitle}>Tahsilat Al</Text>
-                          <Text style={styles.paymentSubtitle}>{c.name} • Mevcut borç: {c.balance} ₺</Text>
+                          <Text style={styles.paymentSubtitle}>{c.name} • Mevcut borç: {bal} ₺</Text>
                         </View>
                       </View>
 

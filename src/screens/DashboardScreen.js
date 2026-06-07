@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { customerBalance } from '../lib/balance';
+import RefreshButton from '../components/RefreshButton';
 import { Package, DollarSign, Clock, ChevronRight, TrendingUp, Zap, LogOut } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -29,7 +31,7 @@ const AnimatedCard = ({ children, delay = 0, style }) => {
 };
 
 export default function DashboardScreen() {
-  const { orders, customers, fetchData, isLoading } = useStore();
+  const { orders, customers, cashTransactions, fetchData, isLoading } = useStore();
   const { profile, signOut } = useAuthStore();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -51,7 +53,7 @@ export default function DashboardScreen() {
   const formattedDate = new Date().toLocaleDateString('tr-TR', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
-  const totalBalance = customers.reduce((sum, c) => sum + (c.balance || 0), 0);
+  const totalBalance = customers.reduce((sum, c) => sum + customerBalance(c.id, orders, cashTransactions), 0);
   const deliveredToday = todaysOrders.filter(o => o.status === 'Teslim Edildi').length;
 
   const getStatusStyle = (status) => {
@@ -79,14 +81,17 @@ export default function DashboardScreen() {
                 <Zap color="#F97316" size={14} />
                 <Text style={styles.headerBadgeText}>Aktif</Text>
               </View>
-              <TouchableOpacity style={styles.profileBtn} onPress={signOut} activeOpacity={0.7}>
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarText}>
-                    {profile?.name ? profile.name.charAt(0).toUpperCase() : '?'}
-                  </Text>
-                </View>
-                <LogOut color="rgba(255,255,255,0.6)" size={16} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <RefreshButton color="#FFFFFF" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} onPress={onRefresh} />
+                <TouchableOpacity style={styles.profileBtn} onPress={signOut} activeOpacity={0.7}>
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarText}>
+                      {profile?.name ? profile.name.charAt(0).toUpperCase() : '?'}
+                    </Text>
+                  </View>
+                  <LogOut color="rgba(255,255,255,0.6)" size={16} />
+                </TouchableOpacity>
+              </View>
             </View>
             <Text style={styles.greeting}>Hoş Geldiniz, {profile?.name?.split(' ')[0] || ''} 👋</Text>
             <Text style={styles.title}>İş Özeti</Text>

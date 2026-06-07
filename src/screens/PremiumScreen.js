@@ -11,6 +11,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useStore } from '../store/useStore';
 import { useToast } from '../store/useToast';
 import { useConfirm } from '../store/useConfirm';
+import { customerBalance } from '../lib/balance';
+import RefreshButton from '../components/RefreshButton';
 import {
   Crown, Plus, TrendingUp, TrendingDown, Wallet, Fuel, Wrench,
   UsersRound, Building, MoreHorizontal, X, ChevronDown,
@@ -211,6 +213,7 @@ export default function PremiumScreen() {
       ...c,
       revenue: orders.filter(o => o.customerId === c.id).reduce((s, o) => s + Number(o.amount), 0),
       orderCount: orders.filter(o => o.customerId === c.id).length,
+      balance: customerBalance(c.id, orders, cashTransactions),
     })).sort((a, b) => b.revenue - a.revenue);
     const routeMap = {};
     orders.forEach(o => {
@@ -232,8 +235,8 @@ export default function PremiumScreen() {
       return { label: `${diff} gün kaldı`, color: '#16A34A', bg: '#F0FDF4', priority: 4 };
     };
     const reminders = customers
-      .filter(c => (c.balance || 0) > 0)
-      .map(c => ({ ...c, dueStatus: getDueStatus(c.due_date) }))
+      .map(c => ({ ...c, balance: customerBalance(c.id, orders, cashTransactions), dueStatus: getDueStatus(c.due_date) }))
+      .filter(c => c.balance > 0)
       .sort((a, b) => {
         const pa = a.dueStatus ? a.dueStatus.priority : 5;
         const pb = b.dueStatus ? b.dueStatus.priority : 5;
@@ -242,6 +245,13 @@ export default function PremiumScreen() {
       });
     return { avgOrderValue, dailyAvg, thisMonthOrders, customerRevenue, topRoute, reminders };
   }, [orders, customers, cashTransactions]);
+
+  // Derived balance per customer (borç = sipariş toplamı − tahsilat). See lib/balance.js.
+  const balanceMap = useMemo(() => {
+    const m = {};
+    customers.forEach(c => { m[c.id] = customerBalance(c.id, orders, cashTransactions); });
+    return m;
+  }, [customers, orders, cashTransactions]);
 
   const customerExtraData = useMemo(() => {
     if (!selectedCustomer) return [];
@@ -563,9 +573,12 @@ export default function PremiumScreen() {
               <Text style={s.headerTitle}>Kasa & Finans</Text>
               <Text style={s.headerSubtitle}>Gelir-gider ve finans analizi</Text>
             </View>
-            <TouchableOpacity style={s.addButton} onPress={() => setShowAddModal(true)} activeOpacity={0.8}>
-              <Plus color="#FFFFFF" size={22} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <RefreshButton color="#FFFFFF" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} onPress={onRefresh} />
+              <TouchableOpacity style={s.addButton} onPress={() => setShowAddModal(true)} activeOpacity={0.8}>
+                <Plus color="#FFFFFF" size={22} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -670,7 +683,7 @@ export default function PremiumScreen() {
                     <View style={s.customerPickAvatar}><Text style={s.customerPickAvatarText}>{c.name.charAt(0).toUpperCase()}</Text></View>
                     <View style={{ flex: 1 }}>
                       <Text style={s.customerPickName}>{c.name}</Text>
-                      <Text style={s.customerPickBalance}>Bakiye: {fmt(c.balance || 0)} ₺</Text>
+                      <Text style={s.customerPickBalance}>Bakiye: {fmt(balanceMap[c.id] || 0)} ₺</Text>
                     </View>
                     <ChevronDown color="#9CA3AF" size={16} style={{ transform: [{ rotate: '-90deg' }] }} />
                   </TouchableOpacity>
@@ -693,7 +706,7 @@ export default function PremiumScreen() {
                     <View style={s.extraSumDivider} />
                     <View style={s.extraSumItem}>
                       <Text style={s.extraSumLabel}>Bakiye</Text>
-                      <Text style={[s.extraSumValue, { color: (selectedCustomer.balance || 0) > 0 ? '#DC2626' : '#16A34A' }]}>{fmt(selectedCustomer.balance || 0)} ₺</Text>
+                      <Text style={[s.extraSumValue, { color: (balanceMap[selectedCustomer.id] || 0) > 0 ? '#DC2626' : '#16A34A' }]}>{fmt(balanceMap[selectedCustomer.id] || 0)} ₺</Text>
                     </View>
                   </View>
                 </View>
