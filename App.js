@@ -24,6 +24,31 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
     document.head.appendChild(meta);
   }
 
+  // PWA: link the manifest, theme color, iOS home-screen support, and register
+  // the service worker so the web app becomes installable ("Ana ekrana ekle").
+  const addHeadTag = (tag, attrs) => {
+    const el = document.createElement(tag);
+    Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+    document.head.appendChild(el);
+  };
+  if (!document.querySelector('link[rel="manifest"]')) {
+    addHeadTag('link', { rel: 'manifest', href: '/manifest.json' });
+  }
+  if (!document.querySelector('meta[name="theme-color"]')) {
+    addHeadTag('meta', { name: 'theme-color', content: '#EA580C' });
+  }
+  if (!document.querySelector('link[rel="apple-touch-icon"]')) {
+    addHeadTag('link', { rel: 'apple-touch-icon', href: '/icons/icon-192.png' });
+    addHeadTag('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' });
+    addHeadTag('meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' });
+    addHeadTag('meta', { name: 'apple-mobile-web-app-title', content: 'KuryeTakip' });
+  }
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+
   const style = document.createElement('style');
   style.textContent = `
     html, body, #root {
