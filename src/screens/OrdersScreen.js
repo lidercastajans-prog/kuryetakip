@@ -10,6 +10,7 @@ import { useStore } from '../store/useStore';
 import { useToast } from '../store/useToast';
 import { useConfirm } from '../store/useConfirm';
 import RefreshButton from '../components/RefreshButton';
+import { neighborhoodsOf } from '../lib/neighborhoods';
 import { PackagePlus, Bike, Car, Truck, History, ListTodo, Download, X, ChevronDown, FileText, Send, Edit2, Trash2, MapPin, Share2, Clock } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -105,11 +106,18 @@ export default function OrdersScreen() {
   const [selectingDistrictFor, setSelectingDistrictFor] = useState(null); // 'pickup' | 'delivery'
   const [districtSearch, setDistrictSearch] = useState('');
 
+  // Mahalle (neighborhood) Modal State
+  const [mahalleModalVisible, setMahalleModalVisible] = useState(false);
+  const [selectingMahalleFor, setSelectingMahalleFor] = useState(null); // 'pickup' | 'delivery'
+  const [mahalleSearch, setMahalleSearch] = useState('');
+
   // Order Form State
   const [editingOrderId, setEditingOrderId] = useState(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [pickupLocation, setPickupLocation] = useState(null);
   const [deliveryLocation, setDeliveryLocation] = useState(null);
+  const [pickupMahalle, setPickupMahalle] = useState('');
+  const [deliveryMahalle, setDeliveryMahalle] = useState('');
   const [amount, setAmount] = useState('');
   const [vehicleType, setVehicleType] = useState('Motor');
   const [courierName, setCourierName] = useState('');
@@ -165,8 +173,8 @@ export default function OrdersScreen() {
         await editOrder(editingOrderId, {
           customerId: customer.id,
           customerName: customer.name,
-          pickupLocation: pickupLocation.label,
-          deliveryLocation: deliveryLocation.label,
+          pickupLocation: pickupMahalle ? `${pickupLocation.label} / ${pickupMahalle}` : pickupLocation.label,
+          deliveryLocation: deliveryMahalle ? `${deliveryLocation.label} / ${deliveryMahalle}` : deliveryLocation.label,
           vehicleType,
           amount: Number(amount),
           courierName,
@@ -180,8 +188,8 @@ export default function OrdersScreen() {
         await addOrder({
           customerId: customer.id,
           customerName: customer.name,
-          pickupLocation: pickupLocation.label,
-          deliveryLocation: deliveryLocation.label,
+          pickupLocation: pickupMahalle ? `${pickupLocation.label} / ${pickupMahalle}` : pickupLocation.label,
+          deliveryLocation: deliveryMahalle ? `${deliveryLocation.label} / ${deliveryMahalle}` : deliveryLocation.label,
           vehicleType,
           amount: Number(amount),
           courierName,
@@ -194,7 +202,7 @@ export default function OrdersScreen() {
       }
 
       setEditingOrderId(null);
-      setSelectedCustomerId(''); setPickupLocation(null); setDeliveryLocation(null); setAmount('');
+      setSelectedCustomerId(''); setPickupLocation(null); setDeliveryLocation(null); setPickupMahalle(''); setDeliveryMahalle(''); setAmount('');
       setCourierName(''); setCourierPlate(''); setCourierPhone(''); setNote(''); setOrderDueDate(null); setShowOrderDueCal(false);
       setActiveTab('active');
     } catch (error) {
@@ -206,8 +214,12 @@ export default function OrdersScreen() {
   const handleEditClick = (order) => {
     setEditingOrderId(order.id);
     setSelectedCustomerId(order.customerId);
-    setPickupLocation(ISTANBUL_DISTRICTS.find(d => d.label === order.pickupLocation) || { label: order.pickupLocation });
-    setDeliveryLocation(ISTANBUL_DISTRICTS.find(d => d.label === order.deliveryLocation) || { label: order.deliveryLocation });
+    const [pIlce, ...pRest] = String(order.pickupLocation || '').split(' / ');
+    const [dIlce, ...dRest] = String(order.deliveryLocation || '').split(' / ');
+    setPickupLocation(ISTANBUL_DISTRICTS.find(d => d.label === pIlce) || { label: pIlce });
+    setDeliveryLocation(ISTANBUL_DISTRICTS.find(d => d.label === dIlce) || { label: dIlce });
+    setPickupMahalle(pRest.join(' / '));
+    setDeliveryMahalle(dRest.join(' / '));
     setAmount(String(order.amount));
     setVehicleType(order.vehicleType || 'Motor');
     setCourierName(order.courierName || '');
@@ -383,7 +395,7 @@ export default function OrdersScreen() {
               onPress={() => {
                 if(formCollapsed && editingOrderId) {
                    setEditingOrderId(null);
-                   setSelectedCustomerId(''); setPickupLocation(null); setDeliveryLocation(null); setAmount('');
+                   setSelectedCustomerId(''); setPickupLocation(null); setDeliveryLocation(null); setPickupMahalle(''); setDeliveryMahalle(''); setAmount('');
                    setCourierName(''); setCourierPlate(''); setCourierPhone(''); setNote('');
                 }
                 setFormCollapsed(!formCollapsed);
@@ -474,6 +486,38 @@ export default function OrdersScreen() {
                     >
                       <Text style={{ color: deliveryLocation ? '#111827' : '#C3C7CC' }}>
                         {deliveryLocation ? deliveryLocation.label : 'Örn: Kadıköy'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Mahalle (opsiyonel) */}
+                <View style={styles.inputRow}>
+                  <View style={styles.inputHalf}>
+                    <Text style={styles.inputLabel}>Alınacak Mahalle</Text>
+                    <TouchableOpacity
+                      style={styles.input}
+                      onPress={() => {
+                        if (!pickupLocation) return showToast('Önce alınacak semti seçin', 'info');
+                        setSelectingMahalleFor('pickup'); setMahalleSearch(''); setMahalleModalVisible(true);
+                      }}
+                    >
+                      <Text style={{ color: pickupMahalle ? '#111827' : '#C3C7CC' }} numberOfLines={1}>
+                        {pickupMahalle || 'Mahalle (ops.)'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.inputHalf}>
+                    <Text style={styles.inputLabel}>Teslim Mahalle</Text>
+                    <TouchableOpacity
+                      style={styles.input}
+                      onPress={() => {
+                        if (!deliveryLocation) return showToast('Önce teslim semtini seçin', 'info');
+                        setSelectingMahalleFor('delivery'); setMahalleSearch(''); setMahalleModalVisible(true);
+                      }}
+                    >
+                      <Text style={{ color: deliveryMahalle ? '#111827' : '#C3C7CC' }} numberOfLines={1}>
+                        {deliveryMahalle || 'Mahalle (ops.)'}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -732,8 +776,8 @@ export default function OrdersScreen() {
                       key={district.label}
                       style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
                       onPress={() => {
-                        if (selectingDistrictFor === 'pickup') setPickupLocation(district);
-                        if (selectingDistrictFor === 'delivery') setDeliveryLocation(district);
+                        if (selectingDistrictFor === 'pickup') { setPickupLocation(district); setPickupMahalle(''); }
+                        if (selectingDistrictFor === 'delivery') { setDeliveryLocation(district); setDeliveryMahalle(''); }
                         setDistrictModalVisible(false);
                         setDistrictSearch('');
                       }}
@@ -742,6 +786,75 @@ export default function OrdersScreen() {
                       <Text style={{ fontSize: 16, color: '#111827' }}>{district.label}</Text>
                     </TouchableOpacity>
                   ))}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
+
+          {/* MAHALLE MODAL */}
+          <Modal visible={mahalleModalVisible} transparent animationType="slide">
+            <View style={styles.modalOverlay}>
+              <View style={[styles.modalSheet, { height: '80%' }]}>
+                <View style={styles.modalHandle} />
+                <View style={styles.modalHeader}>
+                  <View>
+                    <Text style={styles.modalTitle}>Mahalle Seçin</Text>
+                    <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
+                      {(selectingMahalleFor === 'pickup' ? pickupLocation : deliveryLocation)?.label || ''}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setMahalleModalVisible(false)} style={styles.modalClose}>
+                    <X color="#6B7280" size={20} />
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  style={[styles.input, { marginBottom: 16 }]}
+                  placeholder="Ara veya yaz..."
+                  placeholderTextColor="#9CA3AF"
+                  value={mahalleSearch}
+                  onChangeText={setMahalleSearch}
+                />
+                <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  {(() => {
+                    const dist = selectingMahalleFor === 'pickup' ? pickupLocation : deliveryLocation;
+                    const all = dist ? neighborhoodsOf(dist.label) : [];
+                    const q = mahalleSearch.trim();
+                    const ql = q.toLocaleLowerCase('tr');
+                    const filtered = all.filter(m => m.toLocaleLowerCase('tr').includes(ql));
+                    const exact = all.some(m => m.toLocaleLowerCase('tr') === ql);
+                    const pick = (m) => {
+                      if (selectingMahalleFor === 'pickup') setPickupMahalle(m); else setDeliveryMahalle(m);
+                      setMahalleModalVisible(false); setMahalleSearch('');
+                    };
+                    return (
+                      <>
+                        {q.length > 0 && !exact && (
+                          <TouchableOpacity
+                            style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
+                            onPress={() => pick(q)}
+                          >
+                            <MapPin color="#16A34A" size={18} style={{ marginRight: 10 }} />
+                            <Text style={{ fontSize: 16, color: '#16A34A', fontWeight: '600' }}>"{q}" olarak ekle</Text>
+                          </TouchableOpacity>
+                        )}
+                        {filtered.map(m => (
+                          <TouchableOpacity
+                            key={m}
+                            style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
+                            onPress={() => pick(m)}
+                          >
+                            <MapPin color="#EA580C" size={18} style={{ marginRight: 10, opacity: 0.7 }} />
+                            <Text style={{ fontSize: 16, color: '#111827' }}>{m}</Text>
+                          </TouchableOpacity>
+                        ))}
+                        {all.length === 0 && q.length === 0 && (
+                          <Text style={{ color: '#9CA3AF', textAlign: 'center', marginTop: 20 }}>
+                            Bu ilçe için kayıtlı mahalle yok. Aramaya yazıp ekleyebilirsiniz.
+                          </Text>
+                        )}
+                      </>
+                    );
+                  })()}
                 </ScrollView>
               </View>
             </View>
