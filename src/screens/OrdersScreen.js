@@ -11,6 +11,7 @@ import { useToast } from '../store/useToast';
 import { useConfirm } from '../store/useConfirm';
 import RefreshButton from '../components/RefreshButton';
 import { neighborhoodsOf } from '../lib/neighborhoods';
+import { drivingDistanceKm } from '../lib/distance';
 import { PackagePlus, Bike, Car, Truck, History, ListTodo, Download, X, ChevronDown, FileText, Send, Edit2, Trash2, MapPin, Share2, Clock } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -118,6 +119,11 @@ export default function OrdersScreen() {
   const [deliveryLocation, setDeliveryLocation] = useState(null);
   const [pickupMahalle, setPickupMahalle] = useState('');
   const [deliveryMahalle, setDeliveryMahalle] = useState('');
+
+  // Estimated road distance (driving) for the selected route.
+  const [routeKm, setRouteKm] = useState(null);
+  const [routeMode, setRouteMode] = useState(null); // 'driving' | 'estimate'
+  const [routeLoading, setRouteLoading] = useState(false);
   const [amount, setAmount] = useState('');
   const [vehicleType, setVehicleType] = useState('Motor');
   const [courierName, setCourierName] = useState('');
@@ -159,6 +165,31 @@ export default function OrdersScreen() {
   const [openCalendar, setOpenCalendar] = useState(null); // 'start' | 'end' | null
   const [calViewMonth, setCalViewMonth] = useState(new Date().getMonth());
   const [calViewYear, setCalViewYear] = useState(new Date().getFullYear());
+
+  // Compute the real driving distance whenever the route changes (debounced).
+  useEffect(() => {
+    if (!pickupLocation || !deliveryLocation) { setRouteKm(null); setRouteLoading(false); return; }
+    let cancelled = false;
+    setRouteLoading(true);
+    const timer = setTimeout(async () => {
+      const km = await drivingDistanceKm(
+        { district: pickupLocation.label, mahalle: pickupMahalle, lat: pickupLocation.lat, lon: pickupLocation.lon },
+        { district: deliveryLocation.label, mahalle: deliveryMahalle, lat: deliveryLocation.lat, lon: deliveryLocation.lon }
+      );
+      if (cancelled) return;
+      if (km != null) {
+        setRouteKm(km); setRouteMode('driving');
+      } else if (pickupLocation.lat && deliveryLocation.lat) {
+        // offline / API failed -> rough straight-line estimate
+        setRouteKm(Number(getDistanceKm(pickupLocation.lat, pickupLocation.lon, deliveryLocation.lat, deliveryLocation.lon)));
+        setRouteMode('estimate');
+      } else {
+        setRouteKm(null);
+      }
+      setRouteLoading(false);
+    }, 500);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [pickupLocation, deliveryLocation, pickupMahalle, deliveryMahalle]);
 
   const handleAddOrder = async () => {
     if (!selectedCustomerId || !pickupLocation || !deliveryLocation || !amount) {
@@ -523,11 +554,15 @@ export default function OrdersScreen() {
                   </View>
                 </View>
 
-                {pickupLocation && deliveryLocation && pickupLocation.lat && deliveryLocation.lat && (
+                {pickupLocation && deliveryLocation && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: -4, marginBottom: 8, paddingHorizontal: 4 }}>
                     <MapPin color="#ea580c" size={14} />
                     <Text style={{ fontSize: 13, color: '#ea580c', fontWeight: '600', marginLeft: 4 }}>
-                      Tahmini Mesafe: {getDistanceKm(pickupLocation.lat, pickupLocation.lon, deliveryLocation.lat, deliveryLocation.lon)} km
+                      {routeLoading
+                        ? 'Mesafe hesaplanıyor…'
+                        : routeKm != null
+                          ? `Tahmini Mesafe: ${routeKm.toFixed(1)} km${routeMode === 'estimate' ? ' (yaklaşık)' : ''}`
+                          : 'Mesafe hesaplanamadı'}
                     </Text>
                   </View>
                 )}
