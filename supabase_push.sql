@@ -24,7 +24,10 @@ alter table public.orders add column if not exists notified_at timestamptz;
 
 -- =====================================================
 -- 3) ZAMANLAMA (Edge Function deploy edildikten SONRA çalıştırın)
---    Aşağıdaki YOUR_SERVICE_ROLE_KEY yerine Supabase service_role anahtarınızı yazın.
+--    NOT: Yeni Supabase API anahtar sistemi aktifse, Edge Function ağ geçidi
+--    eski anon/service_role JWT'lerini KABUL ETMEZ. Çağrıda mutlaka
+--    'apikey' başlığında PUBLISHABLE anahtarı (sb_publishable_...) gönderilmeli.
+--    Publishable anahtar gizli değildir; YOUR_PUBLISHABLE_KEY yerine yazın.
 -- =====================================================
 -- create extension if not exists pg_cron;
 -- create extension if not exists pg_net;
@@ -37,7 +40,7 @@ alter table public.orders add column if not exists notified_at timestamptz;
 --     url := 'https://nfdzipkrkphvkhybjuvw.supabase.co/functions/v1/send-delivery-reminders',
 --     headers := jsonb_build_object(
 --       'Content-Type','application/json',
---       'Authorization','Bearer YOUR_SERVICE_ROLE_KEY'
+--       'apikey','YOUR_PUBLISHABLE_KEY'
 --     )
 --   );
 --   $$
