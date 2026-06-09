@@ -27,14 +27,14 @@ async function geocode(query) {
   return result;
 }
 
-// p: { district, mahalle, lat, lon } — lat/lon are the district-center fallback.
+// p: { province, district, mahalle }
 async function endpointCoords(p) {
+  const province = p.province || 'İstanbul';
   if (p.mahalle) {
-    const g = await geocode(`${p.mahalle} Mahallesi, ${p.district}, İstanbul`);
+    const g = await geocode(`${p.mahalle} Mahallesi, ${p.district}, ${province}`);
     if (g) return g;
   }
-  if (p.lat != null && p.lon != null) return { lat: p.lat, lon: p.lon };
-  return geocode(`${p.district}, İstanbul`);
+  return geocode(`${p.district}, ${province}`);
 }
 
 // Returns the road distance in km, or null if it couldn't be computed.

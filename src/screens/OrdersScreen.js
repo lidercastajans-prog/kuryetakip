@@ -12,6 +12,7 @@ import { useConfirm } from '../store/useConfirm';
 import RefreshButton from '../components/RefreshButton';
 import { neighborhoodsOf } from '../lib/neighborhoods';
 import { drivingDistanceKm } from '../lib/distance';
+import { PROVINCES, districtsOf } from '../lib/provinces';
 import { PackagePlus, Bike, Car, Truck, History, ListTodo, Download, X, ChevronDown, FileText, Send, Edit2, Trash2, MapPin, Share2, Clock } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -22,59 +23,6 @@ const VEHICLE_TYPES = [
   { label: 'Panelvan', value: 'Panelvan', icon: Truck },
   { label: 'Kamyonet', value: 'Kamyonet', icon: Truck },
 ];
-
-const ISTANBUL_DISTRICTS = [
-  { label: 'Adalar', lat: 40.8757, lon: 29.1294 },
-  { label: 'Arnavutköy', lat: 41.1833, lon: 28.7333 },
-  { label: 'Ataşehir', lat: 40.9833, lon: 29.1167 },
-  { label: 'Avcılar', lat: 40.9806, lon: 28.7203 },
-  { label: 'Bağcılar', lat: 41.0333, lon: 28.8417 },
-  { label: 'Bahçelievler', lat: 41.0000, lon: 28.8500 },
-  { label: 'Bakırköy', lat: 40.9886, lon: 28.8744 },
-  { label: 'Başakşehir', lat: 41.0969, lon: 28.8017 },
-  { label: 'Bayrampaşa', lat: 41.0333, lon: 28.9000 },
-  { label: 'Beşiktaş', lat: 41.0428, lon: 29.0075 },
-  { label: 'Beykoz', lat: 41.1333, lon: 29.1167 },
-  { label: 'Beylikdüzü', lat: 40.9833, lon: 28.6333 },
-  { label: 'Beyoğlu', lat: 41.0333, lon: 28.9833 },
-  { label: 'Büyükçekmece', lat: 41.0167, lon: 28.5833 },
-  { label: 'Çatalca', lat: 41.1444, lon: 28.4611 },
-  { label: 'Çekmeköy', lat: 41.0333, lon: 29.1667 },
-  { label: 'Esenler', lat: 41.0333, lon: 28.8833 },
-  { label: 'Esenyurt', lat: 41.0333, lon: 28.6833 },
-  { label: 'Eyüpsultan', lat: 41.0417, lon: 28.9333 },
-  { label: 'Fatih', lat: 41.0167, lon: 28.9333 },
-  { label: 'Gaziosmanpaşa', lat: 41.0583, lon: 28.9083 },
-  { label: 'Güngören', lat: 41.0222, lon: 28.8722 },
-  { label: 'Kadıköy', lat: 40.9900, lon: 29.0200 },
-  { label: 'Kağıthane', lat: 41.0833, lon: 28.9667 },
-  { label: 'Kartal', lat: 40.8878, lon: 29.1867 },
-  { label: 'Küçükçekmece', lat: 41.0000, lon: 28.7833 },
-  { label: 'Maltepe', lat: 40.9231, lon: 29.1306 },
-  { label: 'Pendik', lat: 40.8767, lon: 29.2567 },
-  { label: 'Sancaktepe', lat: 40.9833, lon: 29.2167 },
-  { label: 'Sarıyer', lat: 41.1667, lon: 29.0500 },
-  { label: 'Silivri', lat: 41.0667, lon: 28.2500 },
-  { label: 'Sultanbeyli', lat: 40.9667, lon: 29.2667 },
-  { label: 'Sultangazi', lat: 41.1083, lon: 28.8667 },
-  { label: 'Şile', lat: 41.1750, lon: 29.6139 },
-  { label: 'Şişli', lat: 41.0600, lon: 28.9875 },
-  { label: 'Tuzla', lat: 40.8167, lon: 29.3000 },
-  { label: 'Ümraniye', lat: 41.0333, lon: 29.0833 },
-  { label: 'Üsküdar', lat: 41.0269, lon: 29.0158 },
-  { label: 'Zeytinburnu', lat: 40.9889, lon: 28.9042 }
-];
-
-function getDistanceKm(lat1, lon1, lat2, lon2) {
-  const R = 6371; 
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-  return (R * c).toFixed(1);
-}
 
 const FadeInView = ({ children, delay = 0, style }) => {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -102,6 +50,11 @@ export default function OrdersScreen() {
   const [activeTab, setActiveTab] = useState('active');
   const [formCollapsed, setFormCollapsed] = useState(false);
   
+  // Province (il) Modal State
+  const [provinceModalVisible, setProvinceModalVisible] = useState(false);
+  const [selectingProvinceFor, setSelectingProvinceFor] = useState(null); // 'pickup' | 'delivery'
+  const [provinceSearch, setProvinceSearch] = useState('');
+
   // District Modal State
   const [districtModalVisible, setDistrictModalVisible] = useState(false);
   const [selectingDistrictFor, setSelectingDistrictFor] = useState(null); // 'pickup' | 'delivery'
@@ -115,8 +68,10 @@ export default function OrdersScreen() {
   // Order Form State
   const [editingOrderId, setEditingOrderId] = useState(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
-  const [pickupLocation, setPickupLocation] = useState(null);
-  const [deliveryLocation, setDeliveryLocation] = useState(null);
+  const [pickupProvince, setPickupProvince] = useState('İstanbul');
+  const [deliveryProvince, setDeliveryProvince] = useState('İstanbul');
+  const [pickupDistrict, setPickupDistrict] = useState('');
+  const [deliveryDistrict, setDeliveryDistrict] = useState('');
   const [pickupMahalle, setPickupMahalle] = useState('');
   const [deliveryMahalle, setDeliveryMahalle] = useState('');
 
@@ -168,31 +123,24 @@ export default function OrdersScreen() {
 
   // Compute the real driving distance whenever the route changes (debounced).
   useEffect(() => {
-    if (!pickupLocation || !deliveryLocation) { setRouteKm(null); setRouteLoading(false); return; }
+    if (!pickupDistrict || !deliveryDistrict) { setRouteKm(null); setRouteLoading(false); return; }
     let cancelled = false;
     setRouteLoading(true);
     const timer = setTimeout(async () => {
       const km = await drivingDistanceKm(
-        { district: pickupLocation.label, mahalle: pickupMahalle, lat: pickupLocation.lat, lon: pickupLocation.lon },
-        { district: deliveryLocation.label, mahalle: deliveryMahalle, lat: deliveryLocation.lat, lon: deliveryLocation.lon }
+        { province: pickupProvince, district: pickupDistrict, mahalle: pickupMahalle },
+        { province: deliveryProvince, district: deliveryDistrict, mahalle: deliveryMahalle }
       );
       if (cancelled) return;
-      if (km != null) {
-        setRouteKm(km); setRouteMode('driving');
-      } else if (pickupLocation.lat && deliveryLocation.lat) {
-        // offline / API failed -> rough straight-line estimate
-        setRouteKm(Number(getDistanceKm(pickupLocation.lat, pickupLocation.lon, deliveryLocation.lat, deliveryLocation.lon)));
-        setRouteMode('estimate');
-      } else {
-        setRouteKm(null);
-      }
+      setRouteKm(km);
+      setRouteMode(km != null ? 'driving' : null);
       setRouteLoading(false);
     }, 500);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [pickupLocation, deliveryLocation, pickupMahalle, deliveryMahalle]);
+  }, [pickupProvince, pickupDistrict, pickupMahalle, deliveryProvince, deliveryDistrict, deliveryMahalle]);
 
   const handleAddOrder = async () => {
-    if (!selectedCustomerId || !pickupLocation || !deliveryLocation || !amount) {
+    if (!selectedCustomerId || !pickupDistrict || !deliveryDistrict || !amount) {
       return showToast('Zorunlu alanları (Müşteri, Semt, Tutar) eksiksiz girin.', 'error');
     }
     const customer = customers.find(c => c.id === selectedCustomerId);
@@ -204,8 +152,8 @@ export default function OrdersScreen() {
         await editOrder(editingOrderId, {
           customerId: customer.id,
           customerName: customer.name,
-          pickupLocation: pickupMahalle ? `${pickupLocation.label} / ${pickupMahalle}` : pickupLocation.label,
-          deliveryLocation: deliveryMahalle ? `${deliveryLocation.label} / ${deliveryMahalle}` : deliveryLocation.label,
+          pickupLocation: (pickupProvince === 'İstanbul' ? pickupDistrict : `${pickupProvince} / ${pickupDistrict}`) + (pickupMahalle ? ` / ${pickupMahalle}` : ''),
+          deliveryLocation: (deliveryProvince === 'İstanbul' ? deliveryDistrict : `${deliveryProvince} / ${deliveryDistrict}`) + (deliveryMahalle ? ` / ${deliveryMahalle}` : ''),
           vehicleType,
           amount: Number(amount),
           courierName,
@@ -219,8 +167,8 @@ export default function OrdersScreen() {
         await addOrder({
           customerId: customer.id,
           customerName: customer.name,
-          pickupLocation: pickupMahalle ? `${pickupLocation.label} / ${pickupMahalle}` : pickupLocation.label,
-          deliveryLocation: deliveryMahalle ? `${deliveryLocation.label} / ${deliveryMahalle}` : deliveryLocation.label,
+          pickupLocation: (pickupProvince === 'İstanbul' ? pickupDistrict : `${pickupProvince} / ${pickupDistrict}`) + (pickupMahalle ? ` / ${pickupMahalle}` : ''),
+          deliveryLocation: (deliveryProvince === 'İstanbul' ? deliveryDistrict : `${deliveryProvince} / ${deliveryDistrict}`) + (deliveryMahalle ? ` / ${deliveryMahalle}` : ''),
           vehicleType,
           amount: Number(amount),
           courierName,
@@ -233,7 +181,7 @@ export default function OrdersScreen() {
       }
 
       setEditingOrderId(null);
-      setSelectedCustomerId(''); setPickupLocation(null); setDeliveryLocation(null); setPickupMahalle(''); setDeliveryMahalle(''); setAmount('');
+      setSelectedCustomerId(''); setPickupProvince('İstanbul'); setDeliveryProvince('İstanbul'); setPickupDistrict(''); setDeliveryDistrict(''); setPickupMahalle(''); setDeliveryMahalle(''); setAmount('');
       setCourierName(''); setCourierPlate(''); setCourierPhone(''); setNote(''); setOrderDueDate(null); setShowOrderDueCal(false);
       setActiveTab('active');
     } catch (error) {
@@ -245,12 +193,15 @@ export default function OrdersScreen() {
   const handleEditClick = (order) => {
     setEditingOrderId(order.id);
     setSelectedCustomerId(order.customerId);
-    const [pIlce, ...pRest] = String(order.pickupLocation || '').split(' / ');
-    const [dIlce, ...dRest] = String(order.deliveryLocation || '').split(' / ');
-    setPickupLocation(ISTANBUL_DISTRICTS.find(d => d.label === pIlce) || { label: pIlce });
-    setDeliveryLocation(ISTANBUL_DISTRICTS.find(d => d.label === dIlce) || { label: dIlce });
-    setPickupMahalle(pRest.join(' / '));
-    setDeliveryMahalle(dRest.join(' / '));
+    const parseLoc = (s) => {
+      const parts = String(s || '').split(' / ');
+      if (parts[0] && PROVINCES.includes(parts[0])) return { province: parts[0], district: parts[1] || '', mahalle: parts.slice(2).join(' / ') };
+      return { province: 'İstanbul', district: parts[0] || '', mahalle: parts.slice(1).join(' / ') };
+    };
+    const pLoc = parseLoc(order.pickupLocation);
+    const dLoc = parseLoc(order.deliveryLocation);
+    setPickupProvince(pLoc.province); setPickupDistrict(pLoc.district); setPickupMahalle(pLoc.mahalle);
+    setDeliveryProvince(dLoc.province); setDeliveryDistrict(dLoc.district); setDeliveryMahalle(dLoc.mahalle);
     setAmount(String(order.amount));
     setVehicleType(order.vehicleType || 'Motor');
     setCourierName(order.courierName || '');
@@ -426,7 +377,7 @@ export default function OrdersScreen() {
               onPress={() => {
                 if(formCollapsed && editingOrderId) {
                    setEditingOrderId(null);
-                   setSelectedCustomerId(''); setPickupLocation(null); setDeliveryLocation(null); setPickupMahalle(''); setDeliveryMahalle(''); setAmount('');
+                   setSelectedCustomerId(''); setPickupProvince('İstanbul'); setDeliveryProvince('İstanbul'); setPickupDistrict(''); setDeliveryDistrict(''); setPickupMahalle(''); setDeliveryMahalle(''); setAmount('');
                    setCourierName(''); setCourierPlate(''); setCourierPhone(''); setNote('');
                 }
                 setFormCollapsed(!formCollapsed);
@@ -496,27 +447,49 @@ export default function OrdersScreen() {
                   })}
                 </View>
 
-                {/* Locations */}
+                {/* İl */}
                 <View style={styles.inputRow}>
                   <View style={styles.inputHalf}>
-                    <Text style={styles.inputLabel}>Alınacak Semt</Text>
+                    <Text style={styles.inputLabel}>Alınacak İl</Text>
                     <TouchableOpacity
                       style={styles.input}
-                      onPress={() => { setSelectingDistrictFor('pickup'); setDistrictModalVisible(true); }}
+                      onPress={() => { setSelectingProvinceFor('pickup'); setProvinceSearch(''); setProvinceModalVisible(true); }}
                     >
-                      <Text style={{ color: pickupLocation ? '#111827' : '#C3C7CC' }}>
-                        {pickupLocation ? pickupLocation.label : 'Örn: Şişli'}
+                      <Text style={{ color: '#111827' }} numberOfLines={1}>{pickupProvince}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.inputHalf}>
+                    <Text style={styles.inputLabel}>Teslim İl</Text>
+                    <TouchableOpacity
+                      style={styles.input}
+                      onPress={() => { setSelectingProvinceFor('delivery'); setProvinceSearch(''); setProvinceModalVisible(true); }}
+                    >
+                      <Text style={{ color: '#111827' }} numberOfLines={1}>{deliveryProvince}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* İlçe */}
+                <View style={styles.inputRow}>
+                  <View style={styles.inputHalf}>
+                    <Text style={styles.inputLabel}>Alınacak İlçe</Text>
+                    <TouchableOpacity
+                      style={styles.input}
+                      onPress={() => { setSelectingDistrictFor('pickup'); setDistrictSearch(''); setDistrictModalVisible(true); }}
+                    >
+                      <Text style={{ color: pickupDistrict ? '#111827' : '#C3C7CC' }} numberOfLines={1}>
+                        {pickupDistrict || 'İlçe seçin'}
                       </Text>
                     </TouchableOpacity>
                   </View>
                   <View style={styles.inputHalf}>
-                    <Text style={styles.inputLabel}>Teslim Semti</Text>
+                    <Text style={styles.inputLabel}>Teslim İlçe</Text>
                     <TouchableOpacity
                       style={styles.input}
-                      onPress={() => { setSelectingDistrictFor('delivery'); setDistrictModalVisible(true); }}
+                      onPress={() => { setSelectingDistrictFor('delivery'); setDistrictSearch(''); setDistrictModalVisible(true); }}
                     >
-                      <Text style={{ color: deliveryLocation ? '#111827' : '#C3C7CC' }}>
-                        {deliveryLocation ? deliveryLocation.label : 'Örn: Kadıköy'}
+                      <Text style={{ color: deliveryDistrict ? '#111827' : '#C3C7CC' }} numberOfLines={1}>
+                        {deliveryDistrict || 'İlçe seçin'}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -529,7 +502,7 @@ export default function OrdersScreen() {
                     <TouchableOpacity
                       style={styles.input}
                       onPress={() => {
-                        if (!pickupLocation) return showToast('Önce alınacak semti seçin', 'info');
+                        if (!pickupDistrict) return showToast('Önce alınacak ilçeyi seçin', 'info');
                         setSelectingMahalleFor('pickup'); setMahalleSearch(''); setMahalleModalVisible(true);
                       }}
                     >
@@ -543,7 +516,7 @@ export default function OrdersScreen() {
                     <TouchableOpacity
                       style={styles.input}
                       onPress={() => {
-                        if (!deliveryLocation) return showToast('Önce teslim semtini seçin', 'info');
+                        if (!deliveryDistrict) return showToast('Önce teslim ilçesini seçin', 'info');
                         setSelectingMahalleFor('delivery'); setMahalleSearch(''); setMahalleModalVisible(true);
                       }}
                     >
@@ -554,14 +527,14 @@ export default function OrdersScreen() {
                   </View>
                 </View>
 
-                {pickupLocation && deliveryLocation && (
+                {pickupDistrict && deliveryDistrict && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: -4, marginBottom: 8, paddingHorizontal: 4 }}>
                     <MapPin color="#ea580c" size={14} />
                     <Text style={{ fontSize: 13, color: '#ea580c', fontWeight: '600', marginLeft: 4 }}>
                       {routeLoading
                         ? 'Mesafe hesaplanıyor…'
                         : routeKm != null
-                          ? `Tahmini Mesafe: ${routeKm.toFixed(1)} km${routeMode === 'estimate' ? ' (yaklaşık)' : ''}`
+                          ? `Tahmini Mesafe: ${routeKm.toFixed(1)} km`
                           : 'Mesafe hesaplanamadı'}
                     </Text>
                   </View>
@@ -585,7 +558,7 @@ export default function OrdersScreen() {
                 <TextInput style={[styles.input, styles.textArea]} placeholder="Zile basılmasın, kapıya bırakılsın..." placeholderTextColor="#C3C7CC" value={note} onChangeText={setNote} multiline />
 
                 {/* Due Date */}
-                <Text style={[styles.inputLabel, { color: '#9CA3AF' }]}>Vade / Teslim Tarihi (İsteğe Bağlı)</Text>
+                <Text style={[styles.inputLabel, { color: '#9CA3AF' }]}>Planlı Teslimat Tarihi (İsteğe Bağlı)</Text>
                 <TouchableOpacity
                   style={[styles.dueDateBtn, orderDueDate && { borderColor: '#EA580C', backgroundColor: '#FFF7ED' }]}
                   onPress={() => {
@@ -599,7 +572,7 @@ export default function OrdersScreen() {
                   <Text style={[styles.dueDateBtnText, orderDueDate && { color: '#EA580C' }]}>
                     {orderDueDate
                       ? orderDueDate.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })
-                      : 'Vade tarihi seç'}
+                      : 'Teslimat tarihi seç'}
                   </Text>
                   {orderDueDate && (
                     <TouchableOpacity onPress={() => { setOrderDueDate(null); setShowOrderDueCal(false); }}>
@@ -785,6 +758,47 @@ export default function OrdersScreen() {
             })
           )}
 
+          {/* IL (PROVINCE) MODAL */}
+          <Modal visible={provinceModalVisible} transparent animationType="slide">
+            <View style={styles.modalOverlay}>
+              <View style={[styles.modalSheet, { height: '80%' }]}>
+                <View style={styles.modalHandle} />
+                <View style={styles.modalHeader}>
+                  <View>
+                    <Text style={styles.modalTitle}>İl Seçin</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setProvinceModalVisible(false)} style={styles.modalClose}>
+                    <X color="#6B7280" size={20} />
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  style={[styles.input, { marginBottom: 16 }]}
+                  placeholder="Ara..."
+                  placeholderTextColor="#9CA3AF"
+                  value={provinceSearch}
+                  onChangeText={setProvinceSearch}
+                />
+                <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  {PROVINCES.filter(p => p.toLocaleLowerCase('tr').includes(provinceSearch.toLocaleLowerCase('tr'))).map(province => (
+                    <TouchableOpacity
+                      key={province}
+                      style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
+                      onPress={() => {
+                        if (selectingProvinceFor === 'pickup') { setPickupProvince(province); setPickupDistrict(''); setPickupMahalle(''); }
+                        else { setDeliveryProvince(province); setDeliveryDistrict(''); setDeliveryMahalle(''); }
+                        setProvinceModalVisible(false);
+                        setProvinceSearch('');
+                      }}
+                    >
+                      <MapPin color="#EA580C" size={18} style={{ marginRight: 10, opacity: 0.7 }} />
+                      <Text style={{ fontSize: 16, color: '#111827' }}>{province}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
+
           {/* DISTRICT MODAL */}
           <Modal visible={districtModalVisible} transparent animationType="slide">
             <View style={styles.modalOverlay}>
@@ -792,7 +806,10 @@ export default function OrdersScreen() {
                 <View style={styles.modalHandle} />
                 <View style={styles.modalHeader}>
                   <View>
-                    <Text style={styles.modalTitle}>Semt Seçin</Text>
+                    <Text style={styles.modalTitle}>İlçe Seçin</Text>
+                    <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
+                      {selectingDistrictFor === 'pickup' ? pickupProvince : deliveryProvince}
+                    </Text>
                   </View>
                   <TouchableOpacity onPress={() => setDistrictModalVisible(false)} style={styles.modalClose}>
                     <X color="#6B7280" size={20} />
@@ -805,20 +822,22 @@ export default function OrdersScreen() {
                   value={districtSearch}
                   onChangeText={setDistrictSearch}
                 />
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  {ISTANBUL_DISTRICTS.filter(d => d.label.toLowerCase().includes(districtSearch.toLowerCase())).map(district => (
+                <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  {districtsOf(selectingDistrictFor === 'pickup' ? pickupProvince : deliveryProvince)
+                    .filter(d => d.toLocaleLowerCase('tr').includes(districtSearch.toLocaleLowerCase('tr')))
+                    .map(district => (
                     <TouchableOpacity
-                      key={district.label}
+                      key={district}
                       style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
                       onPress={() => {
-                        if (selectingDistrictFor === 'pickup') { setPickupLocation(district); setPickupMahalle(''); }
-                        if (selectingDistrictFor === 'delivery') { setDeliveryLocation(district); setDeliveryMahalle(''); }
+                        if (selectingDistrictFor === 'pickup') { setPickupDistrict(district); setPickupMahalle(''); }
+                        else { setDeliveryDistrict(district); setDeliveryMahalle(''); }
                         setDistrictModalVisible(false);
                         setDistrictSearch('');
                       }}
                     >
                       <MapPin color="#EA580C" size={18} style={{ marginRight: 10, opacity: 0.7 }} />
-                      <Text style={{ fontSize: 16, color: '#111827' }}>{district.label}</Text>
+                      <Text style={{ fontSize: 16, color: '#111827' }}>{district}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -835,7 +854,7 @@ export default function OrdersScreen() {
                   <View>
                     <Text style={styles.modalTitle}>Mahalle Seçin</Text>
                     <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
-                      {(selectingMahalleFor === 'pickup' ? pickupLocation : deliveryLocation)?.label || ''}
+                      {selectingMahalleFor === 'pickup' ? `${pickupProvince} / ${pickupDistrict}` : `${deliveryProvince} / ${deliveryDistrict}`}
                     </Text>
                   </View>
                   <TouchableOpacity onPress={() => setMahalleModalVisible(false)} style={styles.modalClose}>
@@ -851,8 +870,8 @@ export default function OrdersScreen() {
                 />
                 <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                   {(() => {
-                    const dist = selectingMahalleFor === 'pickup' ? pickupLocation : deliveryLocation;
-                    const all = dist ? neighborhoodsOf(dist.label) : [];
+                    const dist = selectingMahalleFor === 'pickup' ? pickupDistrict : deliveryDistrict;
+                    const all = dist ? neighborhoodsOf(dist) : [];
                     const q = mahalleSearch.trim();
                     const ql = q.toLocaleLowerCase('tr');
                     const filtered = all.filter(m => m.toLocaleLowerCase('tr').includes(ql));
