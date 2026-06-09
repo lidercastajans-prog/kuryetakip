@@ -9,6 +9,7 @@ import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { customerBalance } from '../lib/balance';
 import RefreshButton from '../components/RefreshButton';
+import PushToggle from '../components/PushToggle';
 import { Package, DollarSign, Clock, ChevronRight, TrendingUp, Zap, LogOut } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -98,6 +99,8 @@ export default function DashboardScreen() {
             <Text style={styles.dateText}>{formattedDate}</Text>
           </View>
         </View>
+
+        <PushToggle />
 
         {isLoading && !refreshing ? (
           <View style={styles.loadingContainer}>

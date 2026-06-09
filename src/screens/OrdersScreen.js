@@ -86,6 +86,7 @@ export default function OrdersScreen() {
   const [courierPhone, setCourierPhone] = useState('');
   const [note, setNote] = useState('');
   const [orderDueDate, setOrderDueDate] = useState(null);
+  const [orderDueTime, setOrderDueTime] = useState('09:00');
   const [showOrderDueCal, setShowOrderDueCal] = useState(false);
   const [orderCalMonth, setOrderCalMonth] = useState(new Date().getMonth());
   const [orderCalYear, setOrderCalYear] = useState(new Date().getFullYear());
@@ -145,7 +146,13 @@ export default function OrdersScreen() {
     }
     const customer = customers.find(c => c.id === selectedCustomerId);
 
-    const dueDateVal = orderDueDate ? orderDueDate.toISOString() : null;
+    let dueDateVal = null;
+    if (orderDueDate) {
+      const [h, m] = orderDueTime.split(':');
+      const dd = new Date(orderDueDate);
+      dd.setHours(Math.min(23, Math.max(0, parseInt(h, 10) || 0)), Math.min(59, Math.max(0, parseInt(m, 10) || 0)), 0, 0);
+      dueDateVal = dd.toISOString();
+    }
 
     try {
       if (editingOrderId) {
@@ -182,7 +189,7 @@ export default function OrdersScreen() {
 
       setEditingOrderId(null);
       setSelectedCustomerId(''); setPickupProvince('İstanbul'); setDeliveryProvince('İstanbul'); setPickupDistrict(''); setDeliveryDistrict(''); setPickupMahalle(''); setDeliveryMahalle(''); setAmount('');
-      setCourierName(''); setCourierPlate(''); setCourierPhone(''); setNote(''); setOrderDueDate(null); setShowOrderDueCal(false);
+      setCourierName(''); setCourierPlate(''); setCourierPhone(''); setNote(''); setOrderDueDate(null); setOrderDueTime('09:00'); setShowOrderDueCal(false);
       setActiveTab('active');
     } catch (error) {
       // error is handled and alerted in useStore, so we just catch it to prevent success alert
@@ -208,7 +215,14 @@ export default function OrdersScreen() {
     setCourierPlate(order.courierPlate || '');
     setCourierPhone(order.courierPhone || '');
     setNote(order.note || '');
-    setOrderDueDate(order.due_date ? new Date(order.due_date) : null);
+    if (order.due_date) {
+      const dd = new Date(order.due_date);
+      setOrderDueDate(dd);
+      setOrderDueTime(`${String(dd.getHours()).padStart(2, '0')}:${String(dd.getMinutes()).padStart(2, '0')}`);
+    } else {
+      setOrderDueDate(null);
+      setOrderDueTime('09:00');
+    }
     setFormCollapsed(false);
     setActiveTab('active');
   };
@@ -571,7 +585,7 @@ export default function OrdersScreen() {
                   <Clock color={orderDueDate ? '#EA580C' : '#9CA3AF'} size={16} />
                   <Text style={[styles.dueDateBtnText, orderDueDate && { color: '#EA580C' }]}>
                     {orderDueDate
-                      ? orderDueDate.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })
+                      ? `${orderDueDate.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })} • ${orderDueTime}`
                       : 'Teslimat tarihi seç'}
                   </Text>
                   {orderDueDate && (
@@ -580,6 +594,33 @@ export default function OrdersScreen() {
                     </TouchableOpacity>
                   )}
                 </TouchableOpacity>
+
+                {orderDueDate && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8, paddingHorizontal: 2 }}>
+                    <Clock color="#9CA3AF" size={15} />
+                    <Text style={{ fontSize: 13, color: '#374151', fontWeight: '600' }}>Hatırlatma saati</Text>
+                    <View style={{ flex: 1 }} />
+                    <TextInput
+                      style={[styles.input, { width: 46, textAlign: 'center', marginBottom: 0, paddingVertical: 8 }]}
+                      value={orderDueTime.split(':')[0]}
+                      onChangeText={(t) => setOrderDueTime(`${t.replace(/\D/g, '').slice(0, 2)}:${orderDueTime.split(':')[1] || '00'}`)}
+                      keyboardType="numeric"
+                      maxLength={2}
+                      placeholder="09"
+                      placeholderTextColor="#C3C7CC"
+                    />
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: '#374151' }}>:</Text>
+                    <TextInput
+                      style={[styles.input, { width: 46, textAlign: 'center', marginBottom: 0, paddingVertical: 8 }]}
+                      value={orderDueTime.split(':')[1]}
+                      onChangeText={(t) => setOrderDueTime(`${orderDueTime.split(':')[0] || '09'}:${t.replace(/\D/g, '').slice(0, 2)}`)}
+                      keyboardType="numeric"
+                      maxLength={2}
+                      placeholder="00"
+                      placeholderTextColor="#C3C7CC"
+                    />
+                  </View>
+                )}
 
                 {showOrderDueCal && (
                   <View style={styles.calBox}>
