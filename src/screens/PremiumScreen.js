@@ -136,6 +136,7 @@ export default function PremiumScreen() {
   const [budgets, setBudgets] = useState({});
   const [editingBudgetCat, setEditingBudgetCat] = useState(null);
   const [budgetInput, setBudgetInput] = useState('');
+  const [showAllTx, setShowAllTx] = useState(false);
 
   const onRefresh = async () => { setRefreshing(true); await fetchData(); setRefreshing(false); };
 
@@ -356,7 +357,7 @@ export default function PremiumScreen() {
           <Text style={s.emptyTitle}>Kayıt bulunamadı</Text>
           <Text style={s.emptySubtext}>Seçilen dönemde kasa hareketi yok</Text>
         </View>
-      ) : filteredTransactions.map(tx => {
+      ) : (showAllTx ? filteredTransactions : filteredTransactions.slice(0, 5)).map(tx => {
         const cat = getCatMeta(tx.category);
         const IconComp = cat.icon;
         return (
@@ -375,6 +376,13 @@ export default function PremiumScreen() {
           </TouchableOpacity>
         );
       })}
+      {filteredTransactions.length > 5 && (
+        <TouchableOpacity style={s.showMoreBtn} onPress={() => setShowAllTx(v => !v)} activeOpacity={0.7}>
+          <Text style={s.showMoreText}>
+            {showAllTx ? 'Daha az göster' : `Tümünü gör (${filteredTransactions.length})`}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <Text style={s.sectionTitle}>En Çok Ciro Yapan Müşteriler</Text>
       {[...customers].sort((a, b) => {
@@ -782,6 +790,8 @@ const s = StyleSheet.create({
   extraButtonText: { fontSize: 15, color: '#7C3AED', fontWeight: '700' },
 
   sectionTitle: { fontSize: 18, fontWeight: '700', color: '#111827', paddingHorizontal: 20, marginBottom: 12, letterSpacing: -0.3 },
+  showMoreBtn: { alignSelf: 'center', marginTop: 6, marginBottom: 18, paddingVertical: 10, paddingHorizontal: 22, backgroundColor: '#F3F4F6', borderRadius: 12 },
+  showMoreText: { fontSize: 13, fontWeight: '700', color: '#4B5563' },
 
   emptyCard: {
     backgroundColor: '#FFFFFF', marginHorizontal: 20, borderRadius: 20, padding: 36, alignItems: 'center',

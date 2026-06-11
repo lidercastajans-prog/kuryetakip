@@ -49,6 +49,7 @@ export default function OrdersScreen() {
   const showConfirm = useConfirm((s) => s.showConfirm);
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('active');
+  const [showAllHistory, setShowAllHistory] = useState(false);
   const [formCollapsed, setFormCollapsed] = useState(false);
   
   // Province (il) Modal State
@@ -401,6 +402,11 @@ export default function OrdersScreen() {
   const filteredOrders = orders.filter(o =>
     activeTab === 'active' ? o.status !== 'Teslim Edildi' : o.status === 'Teslim Edildi'
   );
+
+  // Geçmiş listesi uzayabilir — kompakt tut: önce son 8, istenirse tümü.
+  const HISTORY_PREVIEW = 8;
+  const collapseHistory = activeTab === 'history' && !showAllHistory && filteredOrders.length > HISTORY_PREVIEW;
+  const visibleOrders = collapseHistory ? filteredOrders.slice(0, HISTORY_PREVIEW) : filteredOrders;
 
   return (
     <View style={styles.safeArea}>
@@ -786,7 +792,7 @@ export default function OrdersScreen() {
               </View>
             </FadeInView>
           ) : (
-            filteredOrders.map((order, index) => {
+            visibleOrders.map((order, index) => {
               const colors = getStatusColor(order.status);
               const next = nextStatus(order.status);
               const nextLabel = getNextStatusLabel(order.status);
@@ -877,6 +883,15 @@ export default function OrdersScreen() {
                 </FadeInView>
               );
             })
+          )}
+
+          {/* Geçmiş listesini kısaltma / genişletme */}
+          {activeTab === 'history' && filteredOrders.length > HISTORY_PREVIEW && (
+            <TouchableOpacity style={styles.showMoreBtn} onPress={() => setShowAllHistory(v => !v)} activeOpacity={0.7}>
+              <Text style={styles.showMoreText}>
+                {showAllHistory ? 'Daha az göster' : `Tümünü gör (${filteredOrders.length})`}
+              </Text>
+            </TouchableOpacity>
           )}
 
           {/* IL (PROVINCE) MODAL */}
@@ -1510,6 +1525,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 8,
   },
+  showMoreBtn: {
+    alignSelf: 'center',
+    marginTop: 6,
+    marginBottom: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+  },
+  showMoreText: { fontSize: 13, fontWeight: '700', color: '#4B5563' },
 
   // Empty
   dueDateBtn: {
