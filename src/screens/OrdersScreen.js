@@ -12,6 +12,7 @@ import { useConfirm } from '../store/useConfirm';
 import RefreshButton from '../components/RefreshButton';
 import { neighborhoodsOf } from '../lib/neighborhoods';
 import { drivingDistanceKm } from '../lib/distance';
+import VoiceOrderButton from '../components/VoiceOrderButton';
 import { PROVINCES, districtsOf } from '../lib/provinces';
 import { PackagePlus, Bike, Car, Truck, History, ListTodo, Download, X, ChevronDown, FileText, Send, Edit2, Trash2, MapPin, Share2, Clock } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -145,6 +146,26 @@ export default function OrdersScreen() {
     }, 500);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [pickupProvince, pickupDistrict, pickupMahalle, deliveryProvince, deliveryDistrict, deliveryMahalle]);
+
+  // Fill the form from a parsed voice order (user reviews + saves).
+  const fillFromVoice = (f) => {
+    if (f.customerName) {
+      const q = String(f.customerName).toLocaleLowerCase('tr');
+      const c = customers.find((x) => x.name.toLocaleLowerCase('tr') === q)
+        || customers.find((x) => x.name.toLocaleLowerCase('tr').includes(q));
+      if (c) setSelectedCustomerId(c.id);
+    }
+    if (f.pickupProvince) setPickupProvince(f.pickupProvince);
+    if (f.pickupDistrict) setPickupDistrict(f.pickupDistrict);
+    if (f.pickupMahalle) setPickupMahalle(f.pickupMahalle);
+    if (f.deliveryProvince) setDeliveryProvince(f.deliveryProvince);
+    if (f.deliveryDistrict) setDeliveryDistrict(f.deliveryDistrict);
+    if (f.deliveryMahalle) setDeliveryMahalle(f.deliveryMahalle);
+    if (f.amount != null && !isNaN(Number(f.amount))) setAmount(String(f.amount));
+    if (f.vehicleType && VEHICLE_TYPES.some((v) => v.value === f.vehicleType)) setVehicleType(f.vehicleType);
+    if (f.note) setNote(f.note);
+    showToast('Sipariş bilgileri dolduruldu — kontrol edip kaydedin.', 'success');
+  };
 
   const handleAddOrder = async () => {
     if (!selectedCustomerId || !pickupDistrict || !deliveryDistrict || !amount) {
@@ -423,6 +444,7 @@ export default function OrdersScreen() {
 
             {!formCollapsed && (
               <View style={styles.formCard}>
+                <VoiceOrderButton customers={customers} onParsed={fillFromVoice} />
                 {/* Customer Selection */}
                 <Text style={styles.inputLabel}>Müşteri Seçin</Text>
                 {customers.length === 0 ? (
