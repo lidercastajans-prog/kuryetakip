@@ -66,7 +66,6 @@ export const useStore = create((set, get) => ({
 
       const newCustomer = {
         ...customerData,
-        balance: 0,
         user_id: userId,
       };
 
@@ -146,22 +145,9 @@ export const useStore = create((set, get) => ({
 
       if (orderError) throw orderError;
 
-      // Müşterinin bakiyesini (borcunu) artırıyoruz
-      const customer = get().customers.find((c) => c.id === orderData.customerId);
-      const newBalance = (customer.balance || 0) + orderData.amount;
-
-      const { error: updateError } = await supabase
-        .from('customers')
-        .update({ balance: newBalance })
-        .eq('id', orderData.customerId);
-
-      if (updateError) throw updateError;
-
+      // Bakiye (borç) artık orders − tahsilat'tan türetiliyor; sayaç tutulmuyor.
       set((state) => ({
         orders: [insertedOrder, ...state.orders],
-        customers: state.customers.map((c) =>
-          c.id === orderData.customerId ? { ...c, balance: newBalance } : c
-        ),
       }));
       return true;
     } catch (error) {
@@ -203,24 +189,11 @@ export const useStore = create((set, get) => ({
 
       if (orderError) throw orderError;
 
-      const customer = get().customers.find((c) => c.id === order.customerId);
-      const newBalance = (customer.balance || 0) - order.amount;
-
-      const { error: updateError } = await supabase
-        .from('customers')
-        .update({ balance: newBalance })
-        .eq('id', order.customerId);
-
-      if (updateError) throw updateError;
-
       set((state) => ({
         orders: state.orders.filter((o) => o.id !== orderId),
-        customers: state.customers.map((c) =>
-          c.id === order.customerId ? { ...c, balance: newBalance } : c
-        ),
       }));
 
-      notify('Sipariş silindi ve bakiye güncellendi.', 'success');
+      notify('Sipariş silindi.', 'success');
     } catch (error) {
       console.error(error);
       notify('Sipariş silinemedi.');
@@ -239,33 +212,11 @@ export const useStore = create((set, get) => ({
 
       if (orderError) throw orderError;
 
-      if (updatedData.amount && updatedData.amount !== oldOrder.amount) {
-        const diff = updatedData.amount - oldOrder.amount;
-        const customer = get().customers.find((c) => c.id === oldOrder.customerId);
-        const newBalance = (customer.balance || 0) + diff;
-
-        const { error: updateError } = await supabase
-          .from('customers')
-          .update({ balance: newBalance })
-          .eq('id', oldOrder.customerId);
-
-        if (updateError) throw updateError;
-
-        set((state) => ({
-          orders: state.orders.map((o) =>
-            o.id === orderId ? { ...o, ...updatedData } : o
-          ),
-          customers: state.customers.map((c) =>
-            c.id === oldOrder.customerId ? { ...c, balance: newBalance } : c
-          ),
-        }));
-      } else {
-        set((state) => ({
-          orders: state.orders.map((o) =>
-            o.id === orderId ? { ...o, ...updatedData } : o
-          ),
-        }));
-      }
+      set((state) => ({
+        orders: state.orders.map((o) =>
+          o.id === orderId ? { ...o, ...updatedData } : o
+        ),
+      }));
       return true;
     } catch (error) {
       console.error('editOrder error:', error);
@@ -281,22 +232,14 @@ export const useStore = create((set, get) => ({
       const userId = session?.user?.id;
 
       const customer = get().customers.find((c) => c.id === customerId);
-      const newBalance = (customer.balance || 0) - Number(amount);
 
-      const { error } = await supabase
-        .from('customers')
-        .update({ balance: newBalance })
-        .eq('id', customerId);
-
-      if (error) throw error;
-
-      // Otomatik kasa gelir kaydı oluştur
+      // Tahsilatı kasa gelir kaydı olarak işle — bakiye buradan (orders − tahsilat) türetilir.
       const cashEntry = {
         user_id: userId,
         type: 'income',
         category: 'Tahsilat',
         amount: Number(amount),
-        description: `${customer.name} - Tahsilat`,
+        description: `${customer?.name || 'Müşteri'} - Tahsilat`,
         date: new Date().toISOString(),
         relatedCustomerId: customerId,
       };
@@ -307,12 +250,9 @@ export const useStore = create((set, get) => ({
         .select()
         .single();
 
-      if (cashError) console.error('Kasa kaydı hatası:', cashError);
+      if (cashError) throw cashError;
 
       set((state) => ({
-        customers: state.customers.map((c) =>
-          c.id === customerId ? { ...c, balance: newBalance } : c
-        ),
         cashTransactions: cashData
           ? [cashData, ...state.cashTransactions]
           : state.cashTransactions,
