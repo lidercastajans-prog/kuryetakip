@@ -104,6 +104,25 @@ export const useStore = create((set, get) => ({
     }
   },
 
+  // Müşteriye özel kayıtlı alış adresleri (Google konum linki). JSONB dizi.
+  updateCustomerPickupAddresses: async (customerId, addresses) => {
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .update({ pickup_addresses: addresses })
+        .eq('id', customerId);
+      if (error) throw error;
+      set(state => ({
+        customers: state.customers.map(c =>
+          c.id === customerId ? { ...c, pickup_addresses: addresses } : c
+        ),
+      }));
+    } catch (error) {
+      console.error(error);
+      notify('Adres kaydedilemedi.');
+    }
+  },
+
   deleteCustomer: async (customerId) => {
     try {
       const { error } = await supabase

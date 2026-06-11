@@ -14,7 +14,7 @@ import { neighborhoodsOf } from '../lib/neighborhoods';
 import { drivingDistanceKm } from '../lib/distance';
 import VoiceOrderButton from '../components/VoiceOrderButton';
 import { PROVINCES, districtsOf } from '../lib/provinces';
-import { PackagePlus, Bike, Car, Truck, History, ListTodo, Download, X, ChevronDown, FileText, Send, Edit2, Trash2, MapPin, Share2, Clock } from 'lucide-react-native';
+import { PackagePlus, Bike, Car, Truck, History, ListTodo, Download, X, ChevronDown, FileText, Send, Edit2, Trash2, MapPin, Share2, Clock, Save } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
@@ -44,7 +44,7 @@ const FadeInView = ({ children, delay = 0, style }) => {
 };
 
 export default function OrdersScreen() {
-  const { orders, customers, addOrder, updateOrderStatus, editOrder, deleteOrder } = useStore();
+  const { orders, customers, addOrder, updateOrderStatus, editOrder, deleteOrder, updateCustomerPickupAddresses } = useStore();
   const showToast = useToast((s) => s.showToast);
   const showConfirm = useConfirm((s) => s.showConfirm);
   const insets = useSafeAreaInsets();
@@ -76,6 +76,12 @@ export default function OrdersScreen() {
   const [deliveryDistrict, setDeliveryDistrict] = useState('');
   const [pickupMahalle, setPickupMahalle] = useState('');
   const [deliveryMahalle, setDeliveryMahalle] = useState('');
+  const [pickupMapsUrl, setPickupMapsUrl] = useState(''); // siparişe iliştirilen Google konum linki
+
+  // Müşteriye özel alış adresi kaydetme modalı
+  const [showSaveAddrModal, setShowSaveAddrModal] = useState(false);
+  const [addrLabel, setAddrLabel] = useState('');
+  const [addrLink, setAddrLink] = useState('');
 
   // Estimated road distance (driving) for the selected route.
   const [routeKm, setRouteKm] = useState(null);
@@ -189,6 +195,7 @@ export default function OrdersScreen() {
           customerName: customer.name,
           pickupLocation: (pickupProvince === 'İstanbul' ? pickupDistrict : `${pickupProvince} / ${pickupDistrict}`) + (pickupMahalle ? ` / ${pickupMahalle}` : ''),
           deliveryLocation: (deliveryProvince === 'İstanbul' ? deliveryDistrict : `${deliveryProvince} / ${deliveryDistrict}`) + (deliveryMahalle ? ` / ${deliveryMahalle}` : ''),
+          ...(pickupMapsUrl ? { pickup_maps_url: pickupMapsUrl } : {}),
           vehicleType,
           amount: Number(amount),
           courierName,
@@ -205,6 +212,7 @@ export default function OrdersScreen() {
           customerName: customer.name,
           pickupLocation: (pickupProvince === 'İstanbul' ? pickupDistrict : `${pickupProvince} / ${pickupDistrict}`) + (pickupMahalle ? ` / ${pickupMahalle}` : ''),
           deliveryLocation: (deliveryProvince === 'İstanbul' ? deliveryDistrict : `${deliveryProvince} / ${deliveryDistrict}`) + (deliveryMahalle ? ` / ${deliveryMahalle}` : ''),
+          ...(pickupMapsUrl ? { pickup_maps_url: pickupMapsUrl } : {}),
           vehicleType,
           amount: Number(amount),
           courierName,
@@ -218,7 +226,7 @@ export default function OrdersScreen() {
       }
 
       setEditingOrderId(null);
-      setSelectedCustomerId(''); setPickupProvince('İstanbul'); setDeliveryProvince('İstanbul'); setPickupDistrict(''); setDeliveryDistrict(''); setPickupMahalle(''); setDeliveryMahalle(''); setAmount('');
+      setSelectedCustomerId(''); setPickupProvince('İstanbul'); setDeliveryProvince('İstanbul'); setPickupDistrict(''); setDeliveryDistrict(''); setPickupMahalle(''); setDeliveryMahalle(''); setPickupMapsUrl(''); setAmount('');
       setCourierName(''); setCourierPlate(''); setCourierPhone(''); setNote(''); setOrderDueDate(null); setOrderDueTime('09:00'); setShowOrderDueCal(false); setOrderDate(new Date()); setShowOrderDateCal(false);
       setActiveTab('active');
     } catch (error) {
@@ -227,9 +235,61 @@ export default function OrdersScreen() {
     }
   };
 
+  // --- Müşteriye özel kayıtlı alış adresleri ---
+  const applySavedAddress = (a) => {
+    setPickupProvince(a.province || 'İstanbul');
+    setPickupDistrict(a.district || '');
+    setPickupMahalle(a.mahalle || '');
+    setPickupMapsUrl(a.mapsUrl || '');
+  };
+
+  const openSaveAddrModal = () => {
+    if (!selectedCustomerId) return showToast('Önce müşteri seçin', 'info');
+    if (!pickupDistrict) return showToast('Önce alınacak ilçeyi seçin', 'info');
+    setAddrLabel(pickupMahalle || pickupDistrict);
+    setAddrLink(pickupMapsUrl || '');
+    setShowSaveAddrModal(true);
+  };
+
+  const handleSaveAddress = async () => {
+    const link = addrLink.trim();
+    if (!/^https?:\/\//i.test(link)) return showToast('Geçerli bir konum linki yapıştırın', 'error');
+    const customer = customers.find(c => c.id === selectedCustomerId);
+    if (!customer) return;
+    const entry = {
+      id: Date.now().toString(),
+      label: (addrLabel || '').trim() || pickupDistrict,
+      mapsUrl: link,
+      province: pickupProvince,
+      district: pickupDistrict,
+      mahalle: pickupMahalle,
+    };
+    await updateCustomerPickupAddresses(customer.id, [...(customer.pickup_addresses || []), entry]);
+    setPickupMapsUrl(link);
+    setShowSaveAddrModal(false);
+    setAddrLabel(''); setAddrLink('');
+    showToast('Alış adresi kaydedildi', 'success');
+  };
+
+  const handleDeleteAddress = (addr) => {
+    const customer = customers.find(c => c.id === selectedCustomerId);
+    if (!customer) return;
+    showConfirm({
+      title: 'Adresi sil',
+      message: `"${addr.label}" kayıtlı alış adresini silmek istiyor musunuz?`,
+      confirmText: 'Sil',
+      destructive: true,
+      onConfirm: async () => {
+        await updateCustomerPickupAddresses(customer.id, (customer.pickup_addresses || []).filter(x => x.id !== addr.id));
+        if (pickupMapsUrl && pickupMapsUrl === addr.mapsUrl) setPickupMapsUrl('');
+      },
+    });
+  };
+
   const handleEditClick = (order) => {
     setEditingOrderId(order.id);
     setSelectedCustomerId(order.customerId);
+    setPickupMapsUrl(order.pickup_maps_url || '');
     const parseLoc = (s) => {
       const parts = String(s || '').split(' / ');
       if (parts[0] && PROVINCES.includes(parts[0])) return { province: parts[0], district: parts[1] || '', mahalle: parts.slice(2).join(' / ') };
@@ -335,7 +395,7 @@ export default function OrdersScreen() {
   };
 
   const handleShareOrder = async (order) => {
-    const text = `📦 *${order.customerName} Kurye Siparişi*\n\n*Alınacak:* ${order.pickupLocation || '-'}\n*Teslim:* ${order.deliveryLocation || '-'}\n*Araç:* ${order.vehicleType || '-'}\n*Tutar:* ${order.amount} ₺${order.note ? `\n*Not:* ${order.note}` : ''}\n\nİyi çalışmalar!`;
+    const text = `📦 *${order.customerName} Kurye Siparişi*\n\n*Alınacak:* ${order.pickupLocation || '-'}${order.pickup_maps_url ? `\n*Konum:* ${order.pickup_maps_url}` : ''}\n*Teslim:* ${order.deliveryLocation || '-'}\n*Araç:* ${order.vehicleType || '-'}\n*Tutar:* ${order.amount} ₺${order.note ? `\n*Not:* ${order.note}` : ''}\n\nİyi çalışmalar!`;
     try {
       await Share.share({
         message: text,
@@ -403,6 +463,10 @@ export default function OrdersScreen() {
     activeTab === 'active' ? o.status !== 'Teslim Edildi' : o.status === 'Teslim Edildi'
   );
 
+  // Seçili müşterinin kayıtlı alış adresleri (sipariş formunda gösterilir).
+  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+  const savedAddresses = selectedCustomer?.pickup_addresses || [];
+
   // Geçmiş listesi uzayabilir — kompakt tut: önce son 8, istenirse tümü.
   const HISTORY_PREVIEW = 8;
   const collapseHistory = activeTab === 'history' && !showAllHistory && filteredOrders.length > HISTORY_PREVIEW;
@@ -430,7 +494,7 @@ export default function OrdersScreen() {
               onPress={() => {
                 if(formCollapsed && editingOrderId) {
                    setEditingOrderId(null);
-                   setSelectedCustomerId(''); setPickupProvince('İstanbul'); setDeliveryProvince('İstanbul'); setPickupDistrict(''); setDeliveryDistrict(''); setPickupMahalle(''); setDeliveryMahalle(''); setAmount('');
+                   setSelectedCustomerId(''); setPickupProvince('İstanbul'); setDeliveryProvince('İstanbul'); setPickupDistrict(''); setDeliveryDistrict(''); setPickupMahalle(''); setDeliveryMahalle(''); setPickupMapsUrl(''); setAmount('');
                    setCourierName(''); setCourierPlate(''); setCourierPhone(''); setNote('');
                 }
                 setFormCollapsed(!formCollapsed);
@@ -477,6 +541,33 @@ export default function OrdersScreen() {
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
+                )}
+
+                {/* Kayıtlı alış adresleri (seçili müşteriye özel) */}
+                {selectedCustomerId && savedAddresses.length > 0 && (
+                  <>
+                    <Text style={styles.inputLabel}>Kayıtlı Alış Adresleri</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+                      {savedAddresses.map(a => {
+                        const isActive = pickupMapsUrl && pickupMapsUrl === a.mapsUrl;
+                        return (
+                          <TouchableOpacity
+                            key={a.id}
+                            style={[styles.addrChip, isActive && styles.addrChipActive]}
+                            onPress={() => applySavedAddress(a)}
+                            onLongPress={() => handleDeleteAddress(a)}
+                            activeOpacity={0.7}
+                          >
+                            <MapPin color={isActive ? '#EA580C' : '#6B7280'} size={14} />
+                            <Text style={[styles.addrChipText, isActive && styles.addrChipTextActive]} numberOfLines={1}>
+                              {a.label || a.district}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                    <Text style={styles.addrHint}>Seçmek için dokun · silmek için basılı tut</Text>
+                  </>
                 )}
 
                 {/* Vehicle Type */}
@@ -580,6 +671,16 @@ export default function OrdersScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
+
+                {/* Bu alış adresini müşteriye kaydet (Google konum linki) */}
+                {selectedCustomerId && pickupDistrict && (
+                  <TouchableOpacity style={styles.saveAddrBtn} onPress={openSaveAddrModal} activeOpacity={0.7}>
+                    <Save color="#2563EB" size={15} />
+                    <Text style={styles.saveAddrBtnText}>
+                      {pickupMapsUrl ? 'Konum ekli — adresi kaydet/güncelle' : 'Bu alış adresini kaydet (konum linki)'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
                 {pickupDistrict && deliveryDistrict && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: -4, marginBottom: 8, paddingHorizontal: 4 }}>
@@ -835,6 +936,14 @@ export default function OrdersScreen() {
                         </View>
                       </View>
 
+                      {/* Alış konum linki (varsa) */}
+                      {order.pickup_maps_url ? (
+                        <TouchableOpacity style={styles.konumBtn} onPress={() => Linking.openURL(order.pickup_maps_url)} activeOpacity={0.7}>
+                          <MapPin color="#2563EB" size={14} />
+                          <Text style={styles.konumBtnText}>Alış konumunu aç (harita)</Text>
+                        </TouchableOpacity>
+                      ) : null}
+
                       {/* Details */}
                       {(order.courierName || order.note) && (
                         <View style={styles.detailBox}>
@@ -893,6 +1002,45 @@ export default function OrdersScreen() {
               </Text>
             </TouchableOpacity>
           )}
+
+          {/* KAYITLI ALIŞ ADRESİ MODALI */}
+          <Modal visible={showSaveAddrModal} transparent animationType="slide">
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalSheet}>
+                <View style={styles.modalHandle} />
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Alış Adresini Kaydet</Text>
+                  <TouchableOpacity onPress={() => setShowSaveAddrModal(false)} style={styles.modalClose}>
+                    <X color="#6B7280" size={20} />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.inputLabel}>Etiket</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Örn: Depo / Mağaza"
+                  placeholderTextColor="#C3C7CC"
+                  value={addrLabel}
+                  onChangeText={setAddrLabel}
+                />
+                <Text style={[styles.inputLabel, { marginTop: 12 }]}>Google Konum Linki</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="https://maps.app.goo.gl/..."
+                  placeholderTextColor="#C3C7CC"
+                  value={addrLink}
+                  onChangeText={setAddrLink}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                />
+                <Text style={styles.addrHint}>Google Haritalar'da konuma uzun bas → "Paylaş" → linki buraya yapıştır.</Text>
+                <TouchableOpacity style={styles.saveAddrPrimaryBtn} onPress={handleSaveAddress} activeOpacity={0.85}>
+                  <Save color="#FFFFFF" size={16} />
+                  <Text style={styles.saveAddrPrimaryBtnText}>Kaydet</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
 
           {/* IL (PROVINCE) MODAL */}
           <Modal visible={provinceModalVisible} transparent animationType="slide">
@@ -1307,6 +1455,86 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: '#EA580C',
+  },
+  // Kayıtlı alış adresi çipleri
+  addrChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    maxWidth: 200,
+  },
+  addrChipActive: {
+    backgroundColor: '#FFF7ED',
+    borderColor: '#EA580C',
+  },
+  addrChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  addrChipTextActive: {
+    color: '#EA580C',
+  },
+  addrHint: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  saveAddrBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
+    borderRadius: 12,
+    paddingVertical: 11,
+    marginBottom: 10,
+  },
+  saveAddrBtnText: {
+    color: '#2563EB',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  saveAddrPrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#EA580C',
+    borderRadius: 14,
+    paddingVertical: 15,
+    marginTop: 18,
+  },
+  saveAddrPrimaryBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  konumBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 8,
+  },
+  konumBtnText: {
+    color: '#2563EB',
+    fontWeight: '700',
+    fontSize: 12,
   },
 
   // Date range picker
