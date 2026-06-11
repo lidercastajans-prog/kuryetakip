@@ -389,7 +389,7 @@ export default function PremiumScreen() {
             <View style={s.rankBadge}><Text style={s.rankText}>{i + 1}</Text></View>
             <View style={{ flex: 1 }}>
               <Text style={s.topCustomerName}>{c.name}</Text>
-              <Text style={s.topCustomerBalance}>Bakiye: {fmt(c.balance || 0)} ₺</Text>
+              <Text style={s.topCustomerBalance}>Bakiye: {fmt(balanceMap[c.id] || 0)} ₺</Text>
             </View>
             <Text style={s.topCustomerTotal}>{fmt(cTotal)} ₺</Text>
           </View>
