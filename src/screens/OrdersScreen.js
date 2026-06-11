@@ -91,6 +91,12 @@ export default function OrdersScreen() {
   const [orderCalMonth, setOrderCalMonth] = useState(new Date().getMonth());
   const [orderCalYear, setOrderCalYear] = useState(new Date().getFullYear());
 
+  // Sipariş (kayıt) tarihi — geçmiş tarih girilebilsin diye seçilebilir, varsayılan bugün.
+  const [orderDate, setOrderDate] = useState(new Date());
+  const [showOrderDateCal, setShowOrderDateCal] = useState(false);
+  const [orderDateCalMonth, setOrderDateCalMonth] = useState(new Date().getMonth());
+  const [orderDateCalYear, setOrderDateCalYear] = useState(new Date().getFullYear());
+
   const buildCalDays = (month, year) => {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -167,6 +173,7 @@ export default function OrdersScreen() {
           courierPlate,
           courierPhone,
           note,
+          date: orderDate.toISOString(),
           due_date: dueDateVal,
         });
         showToast('Sipariş başarıyla güncellendi', 'success');
@@ -182,6 +189,7 @@ export default function OrdersScreen() {
           courierPlate,
           courierPhone,
           note,
+          date: orderDate.toISOString(),
           due_date: dueDateVal,
         });
         showToast('Sipariş başarıyla oluşturuldu', 'success');
@@ -189,7 +197,7 @@ export default function OrdersScreen() {
 
       setEditingOrderId(null);
       setSelectedCustomerId(''); setPickupProvince('İstanbul'); setDeliveryProvince('İstanbul'); setPickupDistrict(''); setDeliveryDistrict(''); setPickupMahalle(''); setDeliveryMahalle(''); setAmount('');
-      setCourierName(''); setCourierPlate(''); setCourierPhone(''); setNote(''); setOrderDueDate(null); setOrderDueTime('09:00'); setShowOrderDueCal(false);
+      setCourierName(''); setCourierPlate(''); setCourierPhone(''); setNote(''); setOrderDueDate(null); setOrderDueTime('09:00'); setShowOrderDueCal(false); setOrderDate(new Date()); setShowOrderDateCal(false);
       setActiveTab('active');
     } catch (error) {
       // error is handled and alerted in useStore, so we just catch it to prevent success alert
@@ -215,6 +223,10 @@ export default function OrdersScreen() {
     setCourierPlate(order.courierPlate || '');
     setCourierPhone(order.courierPhone || '');
     setNote(order.note || '');
+    const od = order.date ? new Date(order.date) : new Date();
+    setOrderDate(od);
+    setOrderDateCalMonth(od.getMonth());
+    setOrderDateCalYear(od.getFullYear());
     if (order.due_date) {
       const dd = new Date(order.due_date);
       setOrderDueDate(dd);
@@ -570,6 +582,52 @@ export default function OrdersScreen() {
                 {/* Notes */}
                 <Text style={[styles.inputLabel, { color: '#9CA3AF' }]}>Ekstra Notlar</Text>
                 <TextInput style={[styles.input, styles.textArea]} placeholder="Zile basılmasın, kapıya bırakılsın..." placeholderTextColor="#C3C7CC" value={note} onChangeText={setNote} multiline />
+
+                {/* Sipariş Tarihi (geçmiş tarih girilebilir) */}
+                <Text style={styles.inputLabel}>Sipariş Tarihi</Text>
+                <TouchableOpacity
+                  style={[styles.dueDateBtn, { borderColor: '#EA580C', backgroundColor: '#FFF7ED' }]}
+                  onPress={() => {
+                    setOrderDateCalMonth(orderDate.getMonth());
+                    setOrderDateCalYear(orderDate.getFullYear());
+                    setShowOrderDateCal(!showOrderDateCal);
+                  }}
+                >
+                  <Clock color="#EA580C" size={16} />
+                  <Text style={[styles.dueDateBtnText, { color: '#EA580C' }]}>
+                    {orderDate.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  </Text>
+                </TouchableOpacity>
+
+                {showOrderDateCal && (
+                  <View style={styles.calBox}>
+                    <View style={styles.calNavRow}>
+                      <TouchableOpacity onPress={() => { const d = new Date(orderDateCalYear, orderDateCalMonth - 1); setOrderDateCalMonth(d.getMonth()); setOrderDateCalYear(d.getFullYear()); }} style={styles.calNavBtn}>
+                        <Text style={styles.calArrow}>‹</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.calNavTitle}>{MONTHS_TR[orderDateCalMonth]} {orderDateCalYear}</Text>
+                      <TouchableOpacity onPress={() => { const d = new Date(orderDateCalYear, orderDateCalMonth + 1); setOrderDateCalMonth(d.getMonth()); setOrderDateCalYear(d.getFullYear()); }} style={styles.calNavBtn}>
+                        <Text style={styles.calArrow}>›</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.calDayNames}>
+                      {DAYS_TR.map(d => <Text key={d} style={styles.calDayName}>{d}</Text>)}
+                    </View>
+                    <View style={styles.calGrid}>
+                      {buildCalDays(orderDateCalMonth, orderDateCalYear).map((day, i) => {
+                        const isSel = day &&
+                          new Date(orderDateCalYear, orderDateCalMonth, day).toDateString() === orderDate.toDateString();
+                        return (
+                          <TouchableOpacity key={i} style={[styles.calCell, isSel && styles.calCellSelected]}
+                            onPress={() => { if (day) { setOrderDate(new Date(orderDateCalYear, orderDateCalMonth, day)); setShowOrderDateCal(false); } }}
+                          >
+                            <Text style={[styles.calCellText, isSel && styles.calCellTextSelected]}>{day || ''}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
 
                 {/* Due Date */}
                 <Text style={[styles.inputLabel, { color: '#9CA3AF' }]}>Planlı Teslimat Tarihi (İsteğe Bağlı)</Text>

@@ -134,7 +134,7 @@ export const useStore = create((set, get) => ({
       const newOrder = {
         ...orderData,
         status: 'Bekliyor',
-        date: new Date().toISOString(),
+        date: orderData.date || new Date().toISOString(),
         user_id: userId,
       };
 
