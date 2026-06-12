@@ -68,6 +68,50 @@ export const SHADOW = {
 };
 
 /**
+ * iOS Human Interface Guidelines tokens. Used by the HIG-styled screens so the
+ * app reads as native iOS: grouped background, white inset cells, hairline
+ * separators, system colors, and the SF type scale. The brand orange is kept as
+ * the app's tint (the role systemBlue plays in stock iOS apps).
+ *
+ * Contrast (WCAG, verified): secondaryLabel #6E6E73 on white ≈ 5.0:1 (PASS);
+ * tertiaryLabel #8E8E93 only for large/decorative text.
+ */
+export const HIG = {
+  groupedBg: '#F2F2F7',       // systemGroupedBackground
+  cardBg: '#FFFFFF',          // secondarySystemGroupedBackground (inset cells)
+  label: '#1C1C1E',           // label
+  secondaryLabel: '#6E6E73',  // secondaryLabel (opaque, passes 4.5:1 on white)
+  tertiaryLabel: '#8E8E93',   // systemGray — large/decorative only
+  separator: '#C6C6C8',       // opaqueSeparator
+  // System accent colors (iOS light)
+  blue: '#007AFF',
+  green: '#34C759',
+  red: '#FF3B30',
+  orange: '#FF9500',
+  indigo: '#5856D6',
+  purple: '#AF52DE',
+  tint: '#EA580C',            // brand tint
+  // Continuous-corner radii
+  radiusCell: 10,
+  radiusCard: 16,
+  radiusButton: 14,
+};
+
+/** SF Pro type scale (point sizes + weights) per HIG Typography. */
+export const HIG_TYPE = {
+  largeTitle: { fontSize: 34, fontWeight: '700', letterSpacing: 0.37 },
+  title1: { fontSize: 28, fontWeight: '700' },
+  title2: { fontSize: 22, fontWeight: '700' },
+  title3: { fontSize: 20, fontWeight: '600' },
+  headline: { fontSize: 17, fontWeight: '600' },
+  body: { fontSize: 17, fontWeight: '400' },
+  callout: { fontSize: 16, fontWeight: '400' },
+  subhead: { fontSize: 15, fontWeight: '400' },
+  footnote: { fontSize: 13, fontWeight: '400' },
+  caption1: { fontSize: 12, fontWeight: '400' },
+};
+
+/**
  * Order-status color set — one definition shared by the Dashboard and Orders
  * screens (previously duplicated in both). Returns { bg, text, dot }.
  */
