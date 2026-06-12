@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, Animated, Platform, KeyboardAvoidingView
+  TouchableOpacity, Animated, Platform, KeyboardAvoidingView, Linking
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -10,7 +10,7 @@ import { useToast } from '../store/useToast';
 import { useConfirm } from '../store/useConfirm';
 import { customerBalance } from '../lib/balance';
 import RefreshButton from '../components/RefreshButton';
-import { UserPlus, Wallet, Building2, MapPin, Phone, CreditCard, ChevronDown, Trash2, Calendar, Clock } from 'lucide-react-native';
+import { UserPlus, Wallet, Building2, MapPin, Phone, CreditCard, ChevronDown, Trash2, Calendar, Clock, BookMarked, Plus, ExternalLink } from 'lucide-react-native';
 
 const FadeInView = ({ children, delay = 0, style }) => {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -31,7 +31,7 @@ const FadeInView = ({ children, delay = 0, style }) => {
 };
 
 export default function CustomersScreen() {
-  const { customers, orders, cashTransactions, addCustomer, addPayment, deleteCustomer, updateCustomerDueDate } = useStore();
+  const { customers, orders, cashTransactions, addCustomer, addPayment, deleteCustomer, updateCustomerDueDate, updateCustomerPickupAddresses, updateCustomerDeliveryAddresses } = useStore();
   const showToast = useToast((s) => s.showToast);
   const showConfirm = useConfirm((s) => s.showConfirm);
   const insets = useSafeAreaInsets();
@@ -54,6 +54,46 @@ export default function CustomersScreen() {
 
   const [paymentCustomerId, setPaymentCustomerId] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
+
+  // Adres defteri (müşteriye özel alış / teslim adresleri)
+  const [addrCustomerId, setAddrCustomerId] = useState(null);
+  const [newAddrType, setNewAddrType] = useState('pickup'); // 'pickup' | 'delivery'
+  const [newAddrLabel, setNewAddrLabel] = useState('');
+  const [newAddrLink, setNewAddrLink] = useState('');
+
+  const saveNewAddress = async (customer) => {
+    const link = newAddrLink.trim();
+    if (!/^https?:\/\//i.test(link)) return showToast('Geçerli bir Google konum linki yapıştırın', 'error');
+    const entry = {
+      id: Date.now().toString(),
+      label: (newAddrLabel || '').trim() || (newAddrType === 'delivery' ? 'Teslim adresi' : 'Alış adresi'),
+      mapsUrl: link,
+      province: '', district: '', mahalle: '',
+    };
+    if (newAddrType === 'delivery') {
+      await updateCustomerDeliveryAddresses(customer.id, [...(customer.delivery_addresses || []), entry]);
+    } else {
+      await updateCustomerPickupAddresses(customer.id, [...(customer.pickup_addresses || []), entry]);
+    }
+    setNewAddrLabel(''); setNewAddrLink('');
+    showToast(newAddrType === 'delivery' ? 'Teslim adresi kaydedildi' : 'Alış adresi kaydedildi', 'success');
+  };
+
+  const deleteAddress = (customer, addr, type) => {
+    showConfirm({
+      title: 'Adresi sil',
+      message: `"${addr.label}" kayıtlı ${type === 'delivery' ? 'teslim' : 'alış'} adresini silmek istiyor musunuz?`,
+      confirmText: 'Sil',
+      destructive: true,
+      onConfirm: async () => {
+        if (type === 'delivery') {
+          await updateCustomerDeliveryAddresses(customer.id, (customer.delivery_addresses || []).filter(x => x.id !== addr.id));
+        } else {
+          await updateCustomerPickupAddresses(customer.id, (customer.pickup_addresses || []).filter(x => x.id !== addr.id));
+        }
+      },
+    });
+  };
 
   const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   const DAYS_TR = ['Pz','Pt','Sa','Ça','Pe','Cu','Ct'];
@@ -343,6 +383,19 @@ export default function CustomersScreen() {
                         <Calendar color="#6B7280" size={12} />
                         <Text style={styles.setDueBtnText}>{c.due_date ? 'Vadeyi Güncelle' : 'Vade Tarihi Ekle'}</Text>
                       </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.setDueBtn}
+                        onPress={() => {
+                          setAddrCustomerId(addrCustomerId === c.id ? null : c.id);
+                          setNewAddrType('pickup'); setNewAddrLabel(''); setNewAddrLink('');
+                        }}
+                      >
+                        <BookMarked color="#2563EB" size={12} />
+                        <Text style={[styles.setDueBtnText, { color: '#2563EB' }]}>
+                          Adres Defteri ({(c.pickup_addresses?.length || 0) + (c.delivery_addresses?.length || 0)})
+                        </Text>
+                      </TouchableOpacity>
                     </View>
 
                     {/* Balance */}
@@ -405,6 +458,74 @@ export default function CustomersScreen() {
                           <Text style={styles.removeDueBtnText}>Vade Tarihini Kaldır</Text>
                         </TouchableOpacity>
                       )}
+                    </View>
+                  )}
+
+                  {/* Adres Defteri (alış / teslim — Google konum linkleri) */}
+                  {addrCustomerId === c.id && (
+                    <View style={styles.addrBook}>
+                      {[
+                        { type: 'pickup', title: 'Alış Adresleri', color: '#EA580C', list: c.pickup_addresses || [] },
+                        { type: 'delivery', title: 'Teslim Adresleri', color: '#16A34A', list: c.delivery_addresses || [] },
+                      ].map(group => (
+                        <View key={group.type} style={{ marginBottom: 12 }}>
+                          <Text style={[styles.addrGroupTitle, { color: group.color }]}>{group.title}</Text>
+                          {group.list.length === 0 ? (
+                            <Text style={styles.addrEmpty}>Kayıtlı adres yok</Text>
+                          ) : (
+                            group.list.map(a => (
+                              <View key={a.id} style={styles.addrItem}>
+                                <MapPin color={group.color} size={14} />
+                                <Text style={styles.addrItemLabel} numberOfLines={1}>{a.label}</Text>
+                                <TouchableOpacity style={styles.addrItemBtn} onPress={() => Linking.openURL(a.mapsUrl)}>
+                                  <ExternalLink color="#2563EB" size={15} />
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.addrItemBtn} onPress={() => deleteAddress(c, a, group.type)}>
+                                  <Trash2 color="#DC2626" size={15} />
+                                </TouchableOpacity>
+                              </View>
+                            ))
+                          )}
+                        </View>
+                      ))}
+
+                      {/* Yeni adres ekle */}
+                      <View style={styles.addrTypeRow}>
+                        <TouchableOpacity
+                          style={[styles.addrTypeBtn, newAddrType === 'pickup' && styles.addrTypeBtnActivePickup]}
+                          onPress={() => setNewAddrType('pickup')}
+                        >
+                          <Text style={[styles.addrTypeBtnText, newAddrType === 'pickup' && { color: '#EA580C' }]}>Alış</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.addrTypeBtn, newAddrType === 'delivery' && styles.addrTypeBtnActiveDelivery]}
+                          onPress={() => setNewAddrType('delivery')}
+                        >
+                          <Text style={[styles.addrTypeBtnText, newAddrType === 'delivery' && { color: '#16A34A' }]}>Teslim</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <TextInput
+                        style={styles.addrInput}
+                        placeholder="Etiket (örn: Depo / Mağaza)"
+                        placeholderTextColor="#C3C7CC"
+                        value={newAddrLabel}
+                        onChangeText={setNewAddrLabel}
+                      />
+                      <TextInput
+                        style={styles.addrInput}
+                        placeholder="Google konum linki (https://maps.app.goo.gl/...)"
+                        placeholderTextColor="#C3C7CC"
+                        value={newAddrLink}
+                        onChangeText={setNewAddrLink}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        keyboardType="url"
+                      />
+                      <Text style={styles.addrBookHint}>{'Google Haritalar\'da konuma uzun bas → "Paylaş" → linki buraya yapıştır.'}</Text>
+                      <TouchableOpacity style={styles.addrAddBtn} onPress={() => saveNewAddress(c)} activeOpacity={0.85}>
+                        <Plus color="#FFFFFF" size={16} />
+                        <Text style={styles.addrAddBtnText}>{newAddrType === 'delivery' ? 'Teslim Adresi Ekle' : 'Alış Adresi Ekle'}</Text>
+                      </TouchableOpacity>
                     </View>
                   )}
 
@@ -746,6 +867,39 @@ const styles = StyleSheet.create({
   calCellTextSelected: { color: '#FFFFFF', fontWeight: '700' },
   removeDueBtn: { marginTop: 8, alignItems: 'center', paddingVertical: 8 },
   removeDueBtnText: { fontSize: 13, color: '#DC2626', fontWeight: '600' },
+
+  // Adres Defteri
+  addrBook: {
+    backgroundColor: '#FFFFFF', marginHorizontal: 20, marginTop: -8, marginBottom: 10,
+    padding: 16, borderBottomLeftRadius: 16, borderBottomRightRadius: 16,
+    borderWidth: 1.5, borderTopWidth: 0, borderColor: '#E5E7EB',
+  },
+  addrGroupTitle: { fontSize: 12, fontWeight: '800', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.3 },
+  addrEmpty: { fontSize: 12, color: '#C3C7CC', fontStyle: 'italic', marginBottom: 2 },
+  addrItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#F9FAFB', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 6,
+  },
+  addrItemLabel: { flex: 1, fontSize: 13, fontWeight: '600', color: '#374151' },
+  addrItemBtn: { padding: 4 },
+  addrTypeRow: { flexDirection: 'row', gap: 8, marginTop: 4, marginBottom: 10 },
+  addrTypeBtn: {
+    flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 10,
+    borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB',
+  },
+  addrTypeBtnActivePickup: { borderColor: '#EA580C', backgroundColor: '#FFF7ED' },
+  addrTypeBtnActiveDelivery: { borderColor: '#16A34A', backgroundColor: '#F0FDF4' },
+  addrTypeBtnText: { fontSize: 13, fontWeight: '700', color: '#9CA3AF' },
+  addrInput: {
+    backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#111827', marginBottom: 8,
+  },
+  addrBookHint: { fontSize: 11, color: '#9CA3AF', marginBottom: 10, lineHeight: 15 },
+  addrAddBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: '#111827', borderRadius: 12, paddingVertical: 13,
+  },
+  addrAddBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
 
   paymentCard: {
     backgroundColor: '#FFFFFF',

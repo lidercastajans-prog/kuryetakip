@@ -259,6 +259,7 @@ export default function PremiumScreen() {
     const o = orders.filter(o => o.customerId === selectedCustomer.id).map(o => ({
       id: o.id, date: o.date, type: 'order',
       description: `${o.pickupLocation || '-'} → ${o.deliveryLocation || '-'}`,
+      vehicle: o.vehicleType || '',
       amount: Number(o.amount),
     }));
     const p = cashTransactions.filter(t => t.relatedCustomerId === selectedCustomer.id && t.category === 'Tahsilat').map(t => ({
@@ -724,7 +725,9 @@ export default function PremiumScreen() {
                     <View style={[s.extraDot, { backgroundColor: item.type === 'order' ? '#EA580C' : '#16A34A' }]} />
                     <View style={{ flex: 1 }}>
                       <Text style={s.extraRowDesc}>{item.description}</Text>
-                      <Text style={s.extraRowDate}>{fmtDate(item.date)}</Text>
+                      <Text style={s.extraRowDate}>
+                        {fmtDate(item.date)}{item.type === 'order' && item.vehicle ? ` • ${item.vehicle}` : ''}
+                      </Text>
                     </View>
                     <Text style={[s.extraRowAmount, { color: item.type === 'order' ? '#DC2626' : '#16A34A' }]}>
                       {item.type === 'order' ? '+' : '-'}{fmt(item.amount)} ₺
