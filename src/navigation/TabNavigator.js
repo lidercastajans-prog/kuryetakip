@@ -26,16 +26,16 @@ function MainTabs() {
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
   );
 
-  // Safe-area aware bottom spacing so the bar clears the home indicator / browser toolbar.
-  // Fall back to a sensible default when the device reports no inset.
-  const safeBottom = insets.bottom > 0 ? insets.bottom : (isMobileWeb ? 12 : 8);
-  // The installed iOS PWA over-reports the bottom inset, leaving a big empty gap
-  // under the tab icons. Cap it on web; keep the true inset on native devices.
-  const bottomInset = isWeb ? Math.min(safeBottom, 14) : safeBottom;
+  // Safe-area aware bottom spacing so the bar clears the home indicator / browser
+  // toolbar. Use the real inset (it reflects the home-indicator zone, ~34pt) and
+  // fall back to a sensible default only when the device reports none. The #root
+  // env padding was removed (App.js) so this is now the single source of bottom
+  // spacing — no double-counting.
+  const bottomInset = insets.bottom > 0 ? insets.bottom : (isMobileWeb ? 16 : 8);
 
   // Explicit height = content area (icon + label) + bottom safe spacing.
   // Without this the bar relies on minHeight and clips the labels.
-  const tabBarHeight = 54 + bottomInset;
+  const tabBarHeight = 56 + bottomInset;
 
   return (
     <Tab.Navigator
