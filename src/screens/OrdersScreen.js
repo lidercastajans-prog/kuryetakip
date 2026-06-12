@@ -86,7 +86,6 @@ export default function OrdersScreen() {
 
   // Estimated road distance (driving) for the selected route.
   const [routeKm, setRouteKm] = useState(null);
-  const [routeMode, setRouteMode] = useState(null); // 'driving' | 'estimate'
   const [routeLoading, setRouteLoading] = useState(false);
   const [amount, setAmount] = useState('');
   const [vehicleType, setVehicleType] = useState('Motor');
@@ -149,7 +148,6 @@ export default function OrdersScreen() {
       );
       if (cancelled) return;
       setRouteKm(km);
-      setRouteMode(km != null ? 'driving' : null);
       setRouteLoading(false);
     }, 500);
     return () => { cancelled = true; clearTimeout(timer); };
@@ -401,7 +399,7 @@ export default function OrdersScreen() {
       await Share.share({
         message: text,
       });
-    } catch (error) {
+    } catch {
       showToast('Paylaşım gerçekleştirilemedi.', 'error');
     }
   };
@@ -1027,7 +1025,7 @@ export default function OrdersScreen() {
                   autoCorrect={false}
                   keyboardType="url"
                 />
-                <Text style={styles.addrHint}>Google Haritalar'da konuma uzun bas → "Paylaş" → linki buraya yapıştır.</Text>
+                <Text style={styles.addrHint}>{'Google Haritalar\'da konuma uzun bas → "Paylaş" → linki buraya yapıştır.'}</Text>
                 <TouchableOpacity style={styles.saveAddrPrimaryBtn} onPress={handleSaveAddress} activeOpacity={0.85}>
                   <Save color="#FFFFFF" size={16} />
                   <Text style={styles.saveAddrPrimaryBtnText}>Kaydet</Text>
@@ -1166,7 +1164,7 @@ export default function OrdersScreen() {
                             onPress={() => pick(q)}
                           >
                             <MapPin color="#16A34A" size={18} style={{ marginRight: 10 }} />
-                            <Text style={{ fontSize: 16, color: '#16A34A', fontWeight: '600' }}>"{q}" olarak ekle</Text>
+                            <Text style={{ fontSize: 16, color: '#16A34A', fontWeight: '600' }}>{`"${q}" olarak ekle`}</Text>
                           </TouchableOpacity>
                         )}
                         {filtered.map(m => (
@@ -1608,7 +1606,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   calCellSelected: {
-    backgroundColor: '#FFEDD5',
+    backgroundColor: '#EA580C',
   },
   calCellEndpoint: {
     backgroundColor: '#EA580C',
@@ -1620,8 +1618,8 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   calCellTextSelected: {
-    color: '#EA580C',
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   calCellTextEndpoint: {
     color: '#FFFFFF',
@@ -1769,17 +1767,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB', borderRadius: 16, borderWidth: 1,
     borderColor: '#E5E7EB', padding: 12, marginBottom: 12,
   },
-  calNavRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  calNavBtn: { padding: 6 },
   calArrow: { fontSize: 22, color: '#EA580C', fontWeight: '700', lineHeight: 24 },
-  calNavTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  calDayNames: { flexDirection: 'row', marginBottom: 4 },
-  calDayName: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600', color: '#9CA3AF' },
-  calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calCell: { width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
-  calCellSelected: { backgroundColor: '#EA580C' },
-  calCellText: { fontSize: 13, fontWeight: '500', color: '#374151' },
-  calCellTextSelected: { color: '#FFFFFF', fontWeight: '700' },
   orderDueBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3,
