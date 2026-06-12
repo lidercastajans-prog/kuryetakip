@@ -37,7 +37,7 @@ export default function PushToggle() {
   };
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85} disabled={busy}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85} disabled={busy} accessibilityRole="button" accessibilityLabel="Planlı teslimat bildirimlerini aç">
       <View style={styles.iconWrap}><Bell color="#EA580C" size={20} /></View>
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>Planlı teslimat bildirimleri</Text>

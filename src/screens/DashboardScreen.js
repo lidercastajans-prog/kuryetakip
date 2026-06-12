@@ -12,6 +12,7 @@ import RefreshButton from '../components/RefreshButton';
 import PushToggle from '../components/PushToggle';
 import { Package, DollarSign, Clock, ChevronRight, TrendingUp, Zap, LogOut } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import { statusStyle } from '../theme';
 
 const AnimatedCard = ({ children, delay = 0, style }) => {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -57,15 +58,6 @@ export default function DashboardScreen() {
   const totalBalance = customers.reduce((sum, c) => sum + customerBalance(c.id, orders, cashTransactions), 0);
   const deliveredToday = todaysOrders.filter(o => o.status === 'Teslim Edildi').length;
 
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'Bekliyor': return { bg: '#FFF7ED', text: '#EA580C', dot: '#F97316' };
-      case 'Yolda': return { bg: '#EFF6FF', text: '#2563EB', dot: '#3B82F6' };
-      case 'Teslim Edildi': return { bg: '#F0FDF4', text: '#16A34A', dot: '#22C55E' };
-      default: return { bg: '#F9FAFB', text: '#6B7280', dot: '#9CA3AF' };
-    }
-  };
-
   return (
     <View style={styles.safeArea}>
       <StatusBar style="light" />
@@ -84,7 +76,14 @@ export default function DashboardScreen() {
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <RefreshButton color="#FFFFFF" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} onPress={onRefresh} />
-                <TouchableOpacity style={styles.profileBtn} onPress={signOut} activeOpacity={0.7}>
+                <TouchableOpacity
+                  style={styles.profileBtn}
+                  onPress={signOut}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Çıkış yap"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
                   <View style={styles.avatarCircle}>
                     <Text style={styles.avatarText}>
                       {profile?.name ? profile.name.charAt(0).toUpperCase() : '?'}
@@ -185,7 +184,7 @@ export default function DashboardScreen() {
                 </View>
               ) : (
                 activeOrders.slice(0, 5).map((order, index) => {
-                  const status = getStatusStyle(order.status);
+                  const status = statusStyle(order.status);
                   return (
                     <AnimatedCard key={order.id} delay={550 + index * 80}>
                       <View style={styles.orderCard}>

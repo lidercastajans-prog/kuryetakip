@@ -14,6 +14,7 @@ import { neighborhoodsOf } from '../lib/neighborhoods';
 import { drivingDistanceKm } from '../lib/distance';
 import VoiceOrderButton from '../components/VoiceOrderButton';
 import { PROVINCES, districtsOf } from '../lib/provinces';
+import { statusStyle } from '../theme';
 import { PackagePlus, Bike, Car, Truck, History, ListTodo, Download, X, ChevronDown, FileText, Send, Edit2, Trash2, MapPin, Share2, Clock, Save } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -438,14 +439,7 @@ export default function OrdersScreen() {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Bekliyor': return { bg: '#FFF7ED', text: '#EA580C', dot: '#F97316' };
-      case 'Yolda': return { bg: '#EFF6FF', text: '#2563EB', dot: '#3B82F6' };
-      case 'Teslim Edildi': return { bg: '#F0FDF4', text: '#16A34A', dot: '#22C55E' };
-      default: return { bg: '#F9FAFB', text: '#6B7280', dot: '#9CA3AF' };
-    }
-  };
+  const getStatusColor = statusStyle;
 
   const nextStatus = (currentStatus) => {
     if (currentStatus === 'Bekliyor') return 'Yolda';

@@ -52,6 +52,9 @@ export default function VoiceOrderButton({ customers, onParsed }) {
       onPress={() => (recording ? stop() : start())}
       disabled={processing}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: processing, busy: processing }}
+      accessibilityLabel={recording ? 'Kaydı durdur' : processing ? 'Ses işleniyor' : 'Sesli sipariş ver'}
     >
       {processing ? (
         <>

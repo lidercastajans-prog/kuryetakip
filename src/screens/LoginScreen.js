@@ -81,7 +81,7 @@ export default function LoginScreen() {
               <Truck color="#FFFFFF" size={44} />
             </View>
           </Animated.View>
-          <Animated.Text style={[styles.title, { opacity: contentOpacity }]}>KuryeApp</Animated.Text>
+          <Animated.Text style={[styles.title, { opacity: contentOpacity }]}>KuryeTakip</Animated.Text>
           <Animated.Text style={[styles.subtitle, { opacity: contentOpacity }]}>
             Profesyonel Kurye Yönetim Sistemi
           </Animated.Text>
@@ -164,7 +164,13 @@ export default function LoginScreen() {
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeBtn}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
                 {showPassword
                   ? <EyeOff color="#6B7280" size={18} />
                   : <Eye color="#6B7280" size={18} />
@@ -313,5 +319,5 @@ const styles = StyleSheet.create({
   },
   googleIcon: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
   googleButtonText: { fontSize: 15, fontWeight: '700', color: '#111827', flex: 1 },
-  disclaimer: { fontSize: 12, color: 'rgba(255,255,255,0.25)', textAlign: 'center', lineHeight: 18 },
+  disclaimer: { fontSize: 12, color: 'rgba(255,255,255,0.45)', textAlign: 'center', lineHeight: 18 },
 });

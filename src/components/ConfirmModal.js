@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, Pressable, StyleSheet, Platform } from 'react-native';
 import { useConfirm } from '../store/useConfirm';
 
 export default function ConfirmModal() {
@@ -13,24 +13,26 @@ export default function ConfirmModal() {
 
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={hide}>
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{title}</Text>
+      <Pressable style={styles.overlay} onPress={hide} accessibilityLabel="Kapat">
+        <Pressable style={styles.card} onPress={(e) => e.stopPropagation?.()}>
+          <Text style={styles.title} accessibilityRole="header">{title}</Text>
           {!!message && <Text style={styles.message}>{message}</Text>}
           <View style={styles.row}>
-            <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={hide} activeOpacity={0.8}>
+            <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={hide} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={cancelText}>
               <Text style={styles.cancelText}>{cancelText}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.btn, destructive ? styles.destructiveBtn : styles.confirmBtn]}
               onPress={handleConfirm}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={confirmText}
             >
               <Text style={styles.confirmTextStyle}>{confirmText}</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }

@@ -34,7 +34,7 @@ export default function Toast() {
       <View style={[styles.toast, { backgroundColor: v.bg, borderColor: v.border }]}>
         <Icon color={v.accent} size={22} />
         <Text style={[styles.message, { color: v.text }]} numberOfLines={2}>{message}</Text>
-        <TouchableOpacity onPress={hideToast} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={hideToast} hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }} accessibilityRole="button" accessibilityLabel="Bildirimi kapat">
           <X color={v.text} size={18} />
         </TouchableOpacity>
       </View>
