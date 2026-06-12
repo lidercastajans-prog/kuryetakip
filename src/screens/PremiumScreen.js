@@ -9,6 +9,7 @@ import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useStore } from '../store/useStore';
+import { HIG, HIG_TYPE } from '../theme';
 import { useToast } from '../store/useToast';
 import { useConfirm } from '../store/useConfirm';
 import { customerBalance } from '../lib/balance';
@@ -565,14 +566,14 @@ export default function PremiumScreen() {
 
   return (
     <View style={s.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <ScrollView
         contentContainerStyle={s.container}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#EA580C" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={HIG.tint} />}
       >
         {/* Header */}
-        <View style={[s.headerGradient, { paddingTop: insets.top + 20 }]}>
+        <View style={[s.headerGradient, { paddingTop: insets.top + 16 }]}>
           <View style={s.headerRow}>
             <View>
               <View style={s.premiumBadge}>
@@ -583,7 +584,7 @@ export default function PremiumScreen() {
               <Text style={s.headerSubtitle}>Gelir-gider ve finans analizi</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <RefreshButton color="#FFFFFF" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} onPress={onRefresh} />
+              <RefreshButton color={HIG.tint} style={{ backgroundColor: HIG.cardBg }} onPress={onRefresh} />
               <TouchableOpacity style={s.addButton} onPress={() => setShowAddModal(true)} activeOpacity={0.8}>
                 <Plus color="#FFFFFF" size={22} />
               </TouchableOpacity>
@@ -744,15 +745,15 @@ export default function PremiumScreen() {
 }
 
 const s = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F8F9FB' },
+  safeArea: { flex: 1, backgroundColor: HIG.groupedBg },
   container: { paddingBottom: 140 },
 
-  headerGradient: { backgroundColor: '#111827', paddingHorizontal: 24, paddingBottom: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, marginBottom: 0 },
+  headerGradient: { paddingHorizontal: 20, paddingBottom: 12, marginBottom: 0 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   premiumBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(245,158,11,0.15)', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, marginBottom: 12 },
-  premiumBadgeText: { color: '#F59E0B', fontSize: 12, fontWeight: '700', marginLeft: 4 },
-  headerTitle: { fontSize: 28, fontWeight: '800', color: '#FFFFFF', letterSpacing: -0.5 },
-  headerSubtitle: { fontSize: 14, color: 'rgba(255,255,255,0.5)', marginTop: 4 },
+  premiumBadgeText: { color: '#B45309', fontSize: 12, fontWeight: '700', marginLeft: 4 },
+  headerTitle: { ...HIG_TYPE.largeTitle, color: HIG.label },
+  headerSubtitle: { ...HIG_TYPE.footnote, color: HIG.secondaryLabel, marginTop: 4 },
   addButton: {
     width: 44, height: 44, borderRadius: 14, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center',
     ...Platform.select({ ios: { shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }, android: { elevation: 6 } }),

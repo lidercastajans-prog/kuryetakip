@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Package, Users, Crown } from 'lucide-react-native';
+import { HIG } from '../theme';
 
 import DashboardScreen from '../screens/DashboardScreen';
 import OrdersScreen from '../screens/OrdersScreen';
@@ -27,31 +28,34 @@ function MainTabs() {
 
   // Safe-area aware bottom spacing so the bar clears the home indicator / browser toolbar.
   // Fall back to a sensible default when the device reports no inset.
-  const bottomInset = insets.bottom > 0 ? insets.bottom : (isMobileWeb ? 16 : 8);
+  const safeBottom = insets.bottom > 0 ? insets.bottom : (isMobileWeb ? 12 : 8);
+  // The installed iOS PWA over-reports the bottom inset, leaving a big empty gap
+  // under the tab icons. Cap it on web; keep the true inset on native devices.
+  const bottomInset = isWeb ? Math.min(safeBottom, 14) : safeBottom;
 
   // Explicit height = content area (icon + label) + bottom safe spacing.
   // Without this the bar relies on minHeight and clips the labels.
-  const tabBarHeight = 64 + bottomInset;
+  const tabBarHeight = 54 + bottomInset;
 
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: '#EA580C',
-        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarActiveTintColor: HIG.tint,
+        tabBarInactiveTintColor: HIG.tertiaryLabel,
         tabBarLabelStyle: {
           fontSize: 11,
           // lineHeight must exceed fontSize so descenders (p, ş, g) aren't clipped.
-          lineHeight: 16,
+          lineHeight: 14,
           fontWeight: '600',
-          marginBottom: 4,
-          paddingBottom: 2,
+          marginBottom: 2,
         },
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 0,
+          backgroundColor: HIG.cardBg,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: HIG.separator,
           height: tabBarHeight,
-          paddingTop: 8,
+          paddingTop: 6,
           paddingBottom: bottomInset,
           ...Platform.select({
             ios: {
@@ -132,7 +136,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#EA580C',
+    backgroundColor: HIG.tint,
     marginTop: 3,
   },
 });

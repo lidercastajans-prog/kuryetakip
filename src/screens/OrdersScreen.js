@@ -14,8 +14,8 @@ import { neighborhoodsOf } from '../lib/neighborhoods';
 import { drivingDistanceKm } from '../lib/distance';
 import VoiceOrderButton from '../components/VoiceOrderButton';
 import { PROVINCES, districtsOf } from '../lib/provinces';
-import { statusStyle } from '../theme';
-import { PackagePlus, Bike, Car, Truck, History, ListTodo, Download, X, ChevronDown, FileText, Send, Edit2, Trash2, MapPin, Share2, Clock, Save } from 'lucide-react-native';
+import { statusStyle, HIG, HIG_TYPE } from '../theme';
+import { PackagePlus, Bike, Car, Truck, History, ListTodo, Download, X, ChevronDown, FileText, Send, Edit2, Trash2, MapPin, Share2, Clock, Save, Phone } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
@@ -493,8 +493,8 @@ export default function OrdersScreen() {
   };
 
   const getNextStatusLabel = (current) => {
-    if (current === 'Bekliyor') return '🚀 Yola Çıkar';
-    if (current === 'Yolda') return '✓ Teslim Et';
+    if (current === 'Bekliyor') return 'Yola Çıkar';
+    if (current === 'Yolda') return 'Teslim Et';
     return null;
   };
 
@@ -514,7 +514,7 @@ export default function OrdersScreen() {
 
   return (
     <View style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
@@ -524,7 +524,7 @@ export default function OrdersScreen() {
               <Text style={styles.pageTitle}>Siparişler</Text>
               <Text style={styles.pageSubtitle}>{orders.length} toplam sipariş</Text>
             </View>
-            <RefreshButton color="#EA580C" style={{ backgroundColor: '#FFF7ED' }} />
+            <RefreshButton color={HIG.tint} style={{ backgroundColor: HIG.cardBg }} />
           </View>
 
           {/* New Order Form */}
@@ -1035,12 +1035,25 @@ export default function OrdersScreen() {
                       {(order.courierName || order.note) && (
                         <View style={styles.detailBox}>
                           {order.courierName && (
-                            <Text style={styles.detailLine}>
-                              🏍 {order.courierName} {order.courierPlate ? `(${order.courierPlate})` : ''}
-                            </Text>
+                            <View style={styles.detailRow}>
+                              <Bike color={HIG.secondaryLabel} size={14} />
+                              <Text style={styles.detailLine}>
+                                {order.courierName} {order.courierPlate ? `(${order.courierPlate})` : ''}
+                              </Text>
+                            </View>
                           )}
-                          {order.courierPhone && <Text style={styles.detailLine}>📞 {order.courierPhone}</Text>}
-                          {order.note && <Text style={[styles.detailLine, { fontStyle: 'italic' }]}>📝 {order.note}</Text>}
+                          {order.courierPhone && (
+                            <View style={styles.detailRow}>
+                              <Phone color={HIG.secondaryLabel} size={14} />
+                              <Text style={styles.detailLine}>{order.courierPhone}</Text>
+                            </View>
+                          )}
+                          {order.note && (
+                            <View style={styles.detailRow}>
+                              <FileText color={HIG.secondaryLabel} size={14} />
+                              <Text style={[styles.detailLine, { fontStyle: 'italic' }]}>{order.note}</Text>
+                            </View>
+                          )}
                         </View>
                       )}
 
@@ -1393,30 +1406,25 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F8F9FB' },
+  safeArea: { flex: 1, backgroundColor: HIG.groupedBg },
   container: {
     paddingBottom: 140,
   },
 
-  // Header
+  // Header (iOS large title)
   headerSection: {
-    backgroundColor: '#111827',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingTop: 0, // Controlled by insets in JSX
-    paddingBottom: 24,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    marginBottom: 20,
+    paddingBottom: 12,
+    marginBottom: 8,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
+    ...HIG_TYPE.largeTitle,
+    color: HIG.label,
   },
   pageSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.4)',
+    ...HIG_TYPE.footnote,
+    color: HIG.secondaryLabel,
     marginTop: 4,
   },
 
@@ -1976,16 +1984,22 @@ const styles = StyleSheet.create({
 
   // Detail
   detailBox: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: HIG.groupedBg,
     padding: 10,
     borderRadius: 10,
     marginBottom: 10,
+    gap: 4,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
   },
   detailLine: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 3,
-    fontWeight: '500',
+    flex: 1,
+    fontSize: 13,
+    color: HIG.secondaryLabel,
+    fontWeight: '400',
   },
 
   // Footer

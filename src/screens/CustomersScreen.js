@@ -11,6 +11,7 @@ import { useConfirm } from '../store/useConfirm';
 import { customerBalance } from '../lib/balance';
 import RefreshButton from '../components/RefreshButton';
 import { UserPlus, Wallet, Building2, MapPin, Phone, CreditCard, ChevronDown, Trash2, Calendar, Clock, BookMarked, Plus, ExternalLink } from 'lucide-react-native';
+import { HIG, HIG_TYPE } from '../theme';
 
 const FadeInView = ({ children, delay = 0, style }) => {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -154,7 +155,7 @@ export default function CustomersScreen() {
 
   return (
     <View style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
@@ -164,7 +165,7 @@ export default function CustomersScreen() {
               <Text style={styles.pageTitle}>Cari Hesaplar</Text>
               <Text style={styles.pageSubtitle}>{totalCustomers} müşteri • {totalDebt.toLocaleString('tr-TR')} ₺ toplam</Text>
             </View>
-            <RefreshButton color="#EA580C" style={{ backgroundColor: '#FFF7ED' }} />
+            <RefreshButton color={HIG.tint} style={{ backgroundColor: HIG.cardBg }} />
           </View>
 
           {/* New Customer Form */}
@@ -569,30 +570,25 @@ export default function CustomersScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F8F9FB' },
+  safeArea: { flex: 1, backgroundColor: HIG.groupedBg },
   container: {
     paddingBottom: 140,
   },
 
-  // Header
+  // Header (iOS large title)
   headerSection: {
-    backgroundColor: '#111827',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingTop: 0, // Controlled by insets in JSX
-    paddingBottom: 24,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    marginBottom: 20,
+    paddingBottom: 12,
+    marginBottom: 8,
   },
   pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
+    ...HIG_TYPE.largeTitle,
+    color: HIG.label,
   },
   pageSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.4)',
+    ...HIG_TYPE.footnote,
+    color: HIG.secondaryLabel,
     marginTop: 4,
   },
 
