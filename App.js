@@ -72,7 +72,7 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
        JavaScript inset that iOS mutates while scrolling — this is what keeps the
        bar from resizing/jumping on scroll. */
     #kt-tabbar {
-      padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+      padding-bottom: calc(2px + env(safe-area-inset-bottom, 0px)) !important;
     }
   `;
   document.head.appendChild(style);

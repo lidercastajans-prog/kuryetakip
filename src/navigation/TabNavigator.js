@@ -35,7 +35,7 @@ function CustomTabBar({ state, navigation }) {
         styles.tabBar,
         isWeb
           ? { position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50 }
-          : { position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: (insets.bottom || 8) + 6 },
+          : { position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: (insets.bottom || 8) + 2 },
       ]}
     >
       {state.routes.map((route, index) => {
@@ -120,10 +120,10 @@ const styles = StyleSheet.create({
     backgroundColor: HIG.cardBg,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: HIG.separator,
-    paddingTop: 8,
+    paddingTop: 4,
     ...Platform.select({
       // On web the bottom padding is set by CSS env() (#kt-tabbar in App.js).
-      web: { paddingBottom: 8, boxShadow: '0 -4px 12px rgba(0,0,0,0.06)' },
+      web: { paddingBottom: 4, boxShadow: '0 -4px 12px rgba(0,0,0,0.06)' },
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.06, shadowRadius: 12 },
       android: { elevation: 8 },
     }),
