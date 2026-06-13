@@ -1,6 +1,6 @@
 import React from 'react';
 import { Platform } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/TabNavigator';
 import Toast from './src/components/Toast';
 import ConfirmModal from './src/components/ConfirmModal';
@@ -79,8 +79,22 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 }
 
 export default function App() {
+  // The web app renders inside a position:fixed container; without a forced
+  // relayout the content area can mount with a stale/zero size, leaving the UI
+  // unresponsive until the first user scroll. Nudge a resize right after mount.
+  React.useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const fire = () => window.dispatchEvent(new Event('resize'));
+    requestAnimationFrame(fire);
+    const t = setTimeout(fire, 250);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
-    <SafeAreaProvider style={Platform.OS === 'web' ? { position: 'fixed', top: 0, bottom: 0, left: 0, right: 0, overflow: 'hidden', width: '100%', height: '100%' } : { flex: 1 }}>
+    <SafeAreaProvider
+      initialMetrics={initialWindowMetrics}
+      style={Platform.OS === 'web' ? { position: 'fixed', top: 0, bottom: 0, left: 0, right: 0, overflow: 'hidden', width: '100%', height: '100%' } : { flex: 1 }}
+    >
       <AppNavigator />
       <Toast />
       <ConfirmModal />
