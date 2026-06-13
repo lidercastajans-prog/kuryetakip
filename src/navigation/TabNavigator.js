@@ -123,11 +123,11 @@ const styles = StyleSheet.create({
     backgroundColor: HIG.cardBg,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: HIG.separator,
-    paddingTop: 7,
-    minHeight: 52,
+    paddingTop: 4,
+    minHeight: 44,
     ...Platform.select({
       // On web the bottom padding is set by CSS env() (#kt-tabbar in App.js).
-      web: { paddingBottom: 7, boxShadow: '0 -4px 12px rgba(0,0,0,0.06)' },
+      web: { paddingBottom: 4, boxShadow: '0 -4px 12px rgba(0,0,0,0.06)' },
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.06, shadowRadius: 12 },
       android: { elevation: 8 },
     }),
