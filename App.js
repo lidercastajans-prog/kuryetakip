@@ -53,7 +53,6 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
   style.textContent = `
     html, body, #root {
       height: 100% !important;
-      height: 100svh !important;
       width: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
