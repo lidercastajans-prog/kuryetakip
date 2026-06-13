@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { Home, Package, Users, Crown } from 'lucide-react-native';
 import { HIG } from '../theme';
 
@@ -44,7 +44,14 @@ function MainTabs() {
   // Without this the bar relies on minHeight and clips the labels.
   const tabBarHeight = 56 + bottomInset;
 
+  // Freeze the inset at the CONTEXT level so react-navigation's own internal
+  // safe-area handling (its BottomTabBar reads useSafeAreaInsets too) also uses
+  // the stable bottom value — otherwise it keeps resizing the bar on scroll
+  // regardless of our tabBarStyle.
+  const stableInsets = { top: insets.top, left: insets.left, right: insets.right, bottom: bottomInset };
+
   return (
+    <SafeAreaInsetsContext.Provider value={stableInsets}>
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -100,6 +107,7 @@ function MainTabs() {
       <Tab.Screen name="Cari" component={CustomersScreen} />
       <Tab.Screen name="Premium" component={PremiumScreen} />
     </Tab.Navigator>
+    </SafeAreaInsetsContext.Provider>
   );
 }
 
