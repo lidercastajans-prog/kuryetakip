@@ -1,4 +1,3 @@
-import React from 'react';
 import { Platform } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/TabNavigator';
@@ -51,27 +50,25 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 
   const style = document.createElement('style');
   style.textContent = `
+    /* Standard full-height flex layout. We deliberately do NOT use position:fixed
+       on the root: on iOS standalone PWAs that decouples the document size from
+       the visual viewport, which caused offset/mis-targeted touches and a gap
+       under the content. height:100% + overflow:hidden + overscroll-behavior:none
+       locks the page (no body scroll/rubber-band) without that mismatch. */
     html, body, #root {
       height: 100% !important;
-      width: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
       overflow: hidden !important;
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
       -webkit-text-size-adjust: 100%;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
       overscroll-behavior: none;
     }
+    #root { display: flex; flex-direction: column; }
     * { overscroll-behavior: none; }
-    /* The custom bottom tab bar (TabNavigator) is position:fixed on web. Its
-       bottom safe-area is handled here in PURE CSS so it never depends on a
-       JavaScript inset that iOS mutates while scrolling — this is what keeps the
-       bar from resizing/jumping on scroll. */
+    /* Bottom tab bar (TabNavigator) is a normal flow element; its bottom
+       safe-area (home-indicator clearance) is added here in pure CSS. */
     #kt-tabbar {
       padding-bottom: calc(2px + env(safe-area-inset-bottom, 0px)) !important;
     }
@@ -80,22 +77,8 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 }
 
 export default function App() {
-  // The web app renders inside a position:fixed container; without a forced
-  // relayout the content area can mount with a stale/zero size, leaving the UI
-  // unresponsive until the first user scroll. Nudge a resize right after mount.
-  React.useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    const fire = () => window.dispatchEvent(new Event('resize'));
-    requestAnimationFrame(fire);
-    const t = setTimeout(fire, 250);
-    return () => clearTimeout(t);
-  }, []);
-
   return (
-    <SafeAreaProvider
-      initialMetrics={initialWindowMetrics}
-      style={Platform.OS === 'web' ? { position: 'fixed', top: 0, bottom: 0, left: 0, right: 0, overflow: 'hidden', width: '100%', height: '100%' } : { flex: 1 }}
-    >
+    <SafeAreaProvider initialMetrics={initialWindowMetrics} style={{ flex: 1 }}>
       <AppNavigator />
       <Toast />
       <ConfirmModal />
