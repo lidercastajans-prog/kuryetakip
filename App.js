@@ -67,10 +67,14 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
+    /* The custom bottom tab bar (TabNavigator) is position:fixed on web. Its
+       bottom safe-area is handled here in PURE CSS so it never depends on a
+       JavaScript inset that iOS mutates while scrolling — this is what keeps the
+       bar from resizing/jumping on scroll. */
+    #kt-tabbar {
+      padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    }
   `;
-  // NOTE: the bottom safe-area is handled by the tab bar's own paddingBottom
-  // (see TabNavigator). Adding it to #root too double-counted the inset and left
-  // a large empty gap under the tab icons on the installed iOS PWA.
   document.head.appendChild(style);
 }
 

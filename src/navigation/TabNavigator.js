@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
-import { useSafeAreaInsets, SafeAreaInsetsContext } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Package, Users, Crown } from 'lucide-react-native';
 import { HIG } from '../theme';
 
@@ -16,98 +16,71 @@ import { useAuthStore } from '../store/useAuthStore';
 
 const Tab = createBottomTabNavigator();
 
-function MainTabs() {
+const TAB_ICONS = { 'Özet': Home, 'Siparişler': Package, 'Cari': Users, 'Premium': Crown };
+
+// Fully custom tab bar — deliberately NOT react-navigation's dynamic bar.
+// On web it is position:fixed to the viewport bottom and the bottom safe-area is
+// handled by pure CSS (#kt-tabbar { padding-bottom: calc(8px + env(...)) } in
+// App.js). It reads NO JavaScript safe-area inset on web, so the iOS Safari
+// toolbar / home-indicator fluctuations can never resize it. On native it falls
+// back to the (stable) native inset.
+function CustomTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
 
-  // Detect if running on mobile browser
-  const isMobileWeb = isWeb && (
-    typeof navigator !== 'undefined' &&
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  );
-
-  // iOS reports a FLUCTUATING bottom inset while scrolling (the Safari toolbar
-  // shows/hides and the home-indicator zone changes), which made the tab bar
-  // grow mid-scroll. Freeze the first real (non-zero) inset and use that fixed
-  // value from then on, so the bar's size never changes after the first render.
-  const [frozenBottom, setFrozenBottom] = useState(null);
-  useEffect(() => {
-    if (frozenBottom === null && insets.bottom > 0) setFrozenBottom(insets.bottom);
-  }, [insets.bottom, frozenBottom]);
-
-  // #root no longer adds the safe-area padding (App.js), so the tab bar is the
-  // single source of bottom spacing — no double-counting.
-  const rawBottom = frozenBottom ?? insets.bottom;
-  const bottomInset = rawBottom > 0 ? rawBottom : (isMobileWeb ? 16 : 8);
-
-  // Explicit height = content area (icon + label) + bottom safe spacing.
-  // Without this the bar relies on minHeight and clips the labels.
-  const tabBarHeight = 56 + bottomInset;
-
-  // Freeze the inset at the CONTEXT level so react-navigation's own internal
-  // safe-area handling (its BottomTabBar reads useSafeAreaInsets too) also uses
-  // the stable bottom value — otherwise it keeps resizing the bar on scroll
-  // regardless of our tabBarStyle.
-  const stableInsets = { top: insets.top, left: insets.left, right: insets.right, bottom: bottomInset };
-
   return (
-    <SafeAreaInsetsContext.Provider value={stableInsets}>
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: HIG.tint,
-        tabBarInactiveTintColor: HIG.tertiaryLabel,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          // lineHeight must exceed fontSize so descenders (p, ş, g) aren't clipped.
-          lineHeight: 14,
-          fontWeight: '600',
-          marginBottom: 2,
-        },
-        tabBarStyle: {
-          backgroundColor: HIG.cardBg,
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: HIG.separator,
-          height: tabBarHeight,
-          paddingTop: 6,
-          paddingBottom: bottomInset,
-          ...Platform.select({
-            ios: {
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: 0.06,
-              shadowRadius: 12,
-            },
-            android: {
-              elevation: 8,
-            },
-            web: {
-              boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.06)',
-            }
-          }),
-        },
-        tabBarIcon: ({ color, focused }) => {
-          let IconComponent;
-          if (route.name === 'Özet') IconComponent = Home;
-          else if (route.name === 'Siparişler') IconComponent = Package;
-          else if (route.name === 'Cari') IconComponent = Users;
-          else if (route.name === 'Premium') IconComponent = Crown;
+    <View
+      nativeID={isWeb ? 'kt-tabbar' : undefined}
+      style={[
+        styles.tabBar,
+        isWeb
+          ? { position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50 }
+          : { position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: (insets.bottom || 8) + 6 },
+      ]}
+    >
+      {state.routes.map((route, index) => {
+        const focused = state.index === index;
+        const Icon = TAB_ICONS[route.name];
+        const color = focused ? HIG.tint : HIG.tertiaryLabel;
 
-          return (
-            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-              <IconComponent color={color} size={22} />
+        const onPress = () => {
+          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+        };
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            style={styles.tabItem}
+            onPress={onPress}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityState={{ selected: focused }}
+            accessibilityLabel={route.name}
+          >
+            <View style={styles.iconWrap}>
+              {Icon && <Icon color={color} size={22} />}
               {focused && <View style={styles.activeDot} />}
             </View>
-          );
-        },
+            <Text style={[styles.tabLabel, { color }]} numberOfLines={1}>{route.name}</Text>
+          </TouchableOpacity>
+        );
       })}
+    </View>
+  );
+}
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tab.Screen name="Özet" component={DashboardScreen} />
       <Tab.Screen name="Siparişler" component={OrdersScreen} />
       <Tab.Screen name="Cari" component={CustomersScreen} />
       <Tab.Screen name="Premium" component={PremiumScreen} />
     </Tab.Navigator>
-    </SafeAreaInsetsContext.Provider>
   );
 }
 
@@ -121,7 +94,7 @@ export default function AppNavigator() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#EA580C" />
+        <ActivityIndicator size="large" color={HIG.tint} />
       </View>
     );
   }
@@ -142,16 +115,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconContainer: {
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: HIG.cardBg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: HIG.separator,
+    paddingTop: 8,
+    ...Platform.select({
+      // On web the bottom padding is set by CSS env() (#kt-tabbar in App.js).
+      web: { paddingBottom: 8, boxShadow: '0 -4px 12px rgba(0,0,0,0.06)' },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.06, shadowRadius: 12 },
+      android: { elevation: 8 },
+    }),
+  },
+  tabItem: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconContainerActive: {},
+  iconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 26,
+  },
+  tabLabel: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '600',
+    marginTop: 2,
+  },
   activeDot: {
+    position: 'absolute',
+    bottom: -5,
     width: 4,
     height: 4,
     borderRadius: 2,
     backgroundColor: HIG.tint,
-    marginTop: 3,
   },
 });
