@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
@@ -26,12 +26,19 @@ function MainTabs() {
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
   );
 
-  // Safe-area aware bottom spacing so the bar clears the home indicator / browser
-  // toolbar. Use the real inset (it reflects the home-indicator zone, ~34pt) and
-  // fall back to a sensible default only when the device reports none. The #root
-  // env padding was removed (App.js) so this is now the single source of bottom
-  // spacing — no double-counting.
-  const bottomInset = insets.bottom > 0 ? insets.bottom : (isMobileWeb ? 16 : 8);
+  // iOS reports a FLUCTUATING bottom inset while scrolling (the Safari toolbar
+  // shows/hides and the home-indicator zone changes), which made the tab bar
+  // grow mid-scroll. Freeze the first real (non-zero) inset and use that fixed
+  // value from then on, so the bar's size never changes after the first render.
+  const [frozenBottom, setFrozenBottom] = useState(null);
+  useEffect(() => {
+    if (frozenBottom === null && insets.bottom > 0) setFrozenBottom(insets.bottom);
+  }, [insets.bottom, frozenBottom]);
+
+  // #root no longer adds the safe-area padding (App.js), so the tab bar is the
+  // single source of bottom spacing — no double-counting.
+  const rawBottom = frozenBottom ?? insets.bottom;
+  const bottomInset = rawBottom > 0 ? rawBottom : (isMobileWeb ? 16 : 8);
 
   // Explicit height = content area (icon + label) + bottom safe spacing.
   // Without this the bar relies on minHeight and clips the labels.
