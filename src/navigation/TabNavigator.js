@@ -33,9 +33,11 @@ function CustomTabBar({ state, navigation }) {
       nativeID={isWeb ? 'kt-tabbar' : undefined}
       style={[
         styles.tabBar,
-        isWeb
-          ? { position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50 }
-          : { position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: (insets.bottom || 8) + 2 },
+        // Normal flow element (NOT position:fixed) — on iOS standalone PWAs fixed
+        // elements get dragged by overscroll/rubber-band. As a normal flex child
+        // at the bottom of the navigator it can't move. Safe area: web via CSS
+        // env() (#kt-tabbar in App.js), native via the stable inset.
+        !isWeb && { paddingBottom: (insets.bottom || 8) + 2 },
       ]}
     >
       {state.routes.map((route, index) => {

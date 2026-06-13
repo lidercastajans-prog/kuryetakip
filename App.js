@@ -66,7 +66,9 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       -webkit-text-size-adjust: 100%;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
+      overscroll-behavior: none;
     }
+    * { overscroll-behavior: none; }
     /* The custom bottom tab bar (TabNavigator) is position:fixed on web. Its
        bottom safe-area is handled here in PURE CSS so it never depends on a
        JavaScript inset that iOS mutates while scrolling — this is what keeps the
