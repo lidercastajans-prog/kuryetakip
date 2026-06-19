@@ -11,7 +11,7 @@ import { customerBalance } from '../lib/balance';
 import RefreshButton from '../components/RefreshButton';
 import PushToggle from '../components/PushToggle';
 import { Package, DollarSign, Clock, ChevronRight, TrendingUp, Zap, LogOut } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useTabNavigation } from '../navigation/tabNav';
 import { statusStyle, HIG, HIG_TYPE } from '../theme';
 
 const AnimatedCard = ({ children, delay = 0, style }) => {
@@ -35,7 +35,7 @@ const AnimatedCard = ({ children, delay = 0, style }) => {
 export default function DashboardScreen() {
   const { orders, customers, cashTransactions, fetchData, isLoading } = useStore();
   const { profile, signOut } = useAuthStore();
-  const navigation = useNavigation();
+  const { navigate } = useTabNavigation();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -138,7 +138,7 @@ export default function DashboardScreen() {
               <Text style={styles.sectionTitle}>AKTİF SİPARİŞLER</Text>
               <TouchableOpacity
                 style={styles.seeAllBtn}
-                onPress={() => navigation.navigate('Siparişler')}
+                onPress={() => navigate('Siparişler')}
                 accessibilityRole="button"
                 accessibilityLabel="Tüm siparişleri gör"
               >
@@ -162,7 +162,7 @@ export default function DashboardScreen() {
                       key={order.id}
                       style={styles.row}
                       activeOpacity={0.6}
-                      onPress={() => navigation.navigate('Siparişler')}
+                      onPress={() => navigate('Siparişler')}
                       accessibilityRole="button"
                       accessibilityLabel={`${order.customerName}, ${order.status}, ${order.amount} lira`}
                     >
@@ -191,7 +191,7 @@ export default function DashboardScreen() {
             <AnimatedCard delay={500}>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => navigation.navigate('Siparişler')}
+                onPress={() => navigate('Siparişler')}
                 activeOpacity={0.85}
                 accessibilityRole="button"
                 accessibilityLabel="Yeni sipariş oluştur"
