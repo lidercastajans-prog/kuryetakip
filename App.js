@@ -50,22 +50,17 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 
   const style = document.createElement('style');
   style.textContent = `
-    /* Lock the page so iOS standalone PWAs cannot scroll/rubber-band the document
-       (that is what dragged the bottom bar and offset the touch coordinates).
-       The body is the fixed, viewport-sized container; the bottom tab bar lives
-       INSIDE it as a normal flow element (NOT position:fixed), so there is no
-       fixed-element-vs-scroll mismatch and touches map 1:1. */
+    /* Standard full-height flex layout — confirmed working in the iOS standalone
+       PWA. We deliberately do NOT use position:fixed on the root: on iOS
+       standalone that decouples the document from the visual viewport, which
+       dragged the bar and offset touches. height:100% + overflow:hidden +
+       overscroll-behavior:none locks the page without that mismatch; the screen
+       content scrolls INSIDE a bounded flex area (see TabNavigator shell). */
     html, body, #root {
       height: 100% !important;
-      width: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
       overflow: hidden !important;
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
       -webkit-text-size-adjust: 100%;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
