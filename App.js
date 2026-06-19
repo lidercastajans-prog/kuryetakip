@@ -68,11 +68,6 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
     }
     #root { display: flex; flex-direction: column; }
     * { overscroll-behavior: none; }
-    /* Bottom tab bar (TabNavigator) is a normal flow element; its bottom
-       safe-area (home-indicator clearance) is added here in pure CSS. */
-    #kt-tabbar {
-      padding-bottom: calc(2px + env(safe-area-inset-bottom, 0px)) !important;
-    }
   `;
   document.head.appendChild(style);
 }

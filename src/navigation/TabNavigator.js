@@ -22,11 +22,9 @@ const TABS = [
 
 function CustomTabBar({ activeTab, onChange }) {
   const insets = useSafeAreaInsets();
-  const isWeb = Platform.OS === 'web';
   return (
     <View
-      nativeID={isWeb ? 'kt-tabbar' : undefined}
-      style={[styles.tabBar, !isWeb && { paddingBottom: (insets.bottom || 8) + 2 }]}
+      style={[styles.tabBar, { paddingBottom: (insets.bottom || 8) + 4 }]}
     >
       {TABS.map((t) => {
         const Icon = t.icon;
@@ -64,25 +62,13 @@ function MainTabs() {
   const [activeTab, setActiveTab] = useState('Özet');
   const nav = useMemo(() => ({ activeTab, navigate: setActiveTab }), [activeTab]);
 
+  const ActiveScreen = (TABS.find((t) => t.key === activeTab) || TABS[0]).component;
+
   return (
     <TabNavContext.Provider value={nav}>
       <View style={styles.shell}>
         <View style={styles.screenArea}>
-          {TABS.map((t) => {
-            const Screen = t.component;
-            const isActive = t.key === activeTab;
-            // Keep every screen mounted (preserve scroll position / state); only
-            // the active one is visible and interactive.
-            return (
-              <View
-                key={t.key}
-                style={[styles.screenLayer, !isActive && styles.hidden]}
-                pointerEvents={isActive ? 'auto' : 'none'}
-              >
-                <Screen />
-              </View>
-            );
-          })}
+          <ActiveScreen />
         </View>
         <CustomTabBar activeTab={activeTab} onChange={setActiveTab} />
       </View>
@@ -111,9 +97,7 @@ export default function AppNavigator() {
 const styles = StyleSheet.create({
   loadingContainer: { flex: 1, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center' },
   shell: { flex: 1, backgroundColor: HIG.groupedBg },
-  screenArea: { flex: 1, position: 'relative', overflow: 'hidden' },
-  screenLayer: { ...StyleSheet.absoluteFillObject },
-  hidden: { display: 'none' },
+  screenArea: { flex: 1, overflow: 'hidden' },
   tabBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -121,10 +105,9 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: HIG.separator,
     paddingTop: 4,
-    minHeight: 44,
+    // paddingBottom (home-indicator clearance) is set inline from the JS inset.
     ...Platform.select({
-      // Web bottom padding (home-indicator clearance) is set by CSS env() in App.js (#kt-tabbar).
-      web: { paddingBottom: 4, boxShadow: '0 -4px 12px rgba(0,0,0,0.06)' },
+      web: { boxShadow: '0 -4px 12px rgba(0,0,0,0.06)' },
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.06, shadowRadius: 12 },
       android: { elevation: 8 },
     }),
