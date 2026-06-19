@@ -57,7 +57,7 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
        overscroll-behavior:none locks the page without that mismatch; the screen
        content scrolls INSIDE a bounded flex area (see TabNavigator shell). */
     html, body, #root {
-      height: 100% !important;
+      height: var(--app-height, 100%) !important;
       margin: 0 !important;
       padding: 0 !important;
       overflow: hidden !important;
@@ -70,6 +70,24 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
     * { overscroll-behavior: none; }
   `;
   document.head.appendChild(style);
+
+  // Pin the document height to the ACTUAL visible viewport. On iOS standalone
+  // PWAs the layout viewport (CSS 100%) can differ from the visual viewport, so
+  // hit-testing (done in visual-viewport space) lands off the rendered element —
+  // and the mismatch shows up as the tap landing a row above where you touched,
+  // shifting whenever the tab bar height changes. Setting --app-height from the
+  // visual viewport keeps layout and touch in the same coordinate space.
+  const setAppHeight = () => {
+    const vv = window.visualViewport;
+    const h = Math.round(vv ? vv.height : window.innerHeight);
+    if (h > 0) document.documentElement.style.setProperty('--app-height', h + 'px');
+  };
+  setAppHeight();
+  window.addEventListener('resize', setAppHeight);
+  window.addEventListener('orientationchange', setAppHeight);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', setAppHeight);
+  }
 }
 
 export default function App() {
