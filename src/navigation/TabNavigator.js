@@ -22,9 +22,12 @@ const TABS = [
 
 function CustomTabBar({ activeTab, onChange }) {
   const insets = useSafeAreaInsets();
+  // Clear the home indicator but don't reserve the full safe-area inset (that
+  // made the bar look too tall). A capped value is plenty above the indicator.
+  const bottomPad = Math.min(insets.bottom || 8, 16);
   return (
     <View
-      style={[styles.tabBar, { paddingBottom: (insets.bottom || 8) + 4 }]}
+      style={[styles.tabBar, { paddingBottom: bottomPad }]}
     >
       {TABS.map((t) => {
         const Icon = t.icon;
@@ -104,7 +107,7 @@ const styles = StyleSheet.create({
     backgroundColor: HIG.cardBg,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: HIG.separator,
-    paddingTop: 4,
+    paddingTop: 3,
     // paddingBottom (home-indicator clearance) is set inline from the JS inset.
     ...Platform.select({
       web: { boxShadow: '0 -4px 12px rgba(0,0,0,0.06)' },
@@ -112,8 +115,8 @@ const styles = StyleSheet.create({
       android: { elevation: 8 },
     }),
   },
-  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 2 },
-  iconWrap: { alignItems: 'center', justifyContent: 'center', height: 24 },
-  tabLabel: { fontSize: 11, lineHeight: 13, fontWeight: '600', marginTop: 3 },
+  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 1 },
+  iconWrap: { alignItems: 'center', justifyContent: 'center', height: 22 },
+  tabLabel: { fontSize: 11, lineHeight: 12, fontWeight: '600', marginTop: 2 },
   activeDot: { position: 'absolute', bottom: -6, width: 4, height: 4, borderRadius: 2, backgroundColor: HIG.tint },
 });
